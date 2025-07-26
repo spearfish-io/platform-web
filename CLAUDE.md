@@ -160,20 +160,28 @@ src/app/
 - Focus management is implemented for modal and overlay components
 - Screen reader compatibility is tested and maintained
 
-### 4. **Performance Optimization**
+### 4. **Feature-Flag-Driven Development**
+- **Server-Side Evaluation**: All flags evaluated server-side for consistent behavior and performance
+- **Type-Safe Flag Definitions**: Strongly-typed flag contracts with clear interfaces and runtime validation
+- **Environment-Aware Flags**: Environment-specific flag behavior with proper inheritance (dev/staging/prod)
+- **Authentication-Integrated**: Leverage existing Auth.js session data for user/tenant/role-based flags
+- **Clean Flag Lifecycle**: Clear creation, rollout, monitoring, and cleanup procedures with documentation
+- **Performance-First**: Minimal runtime overhead with caching and efficient flag evaluation patterns
+
+### 5. **Performance Optimization**
 - Server-side rendering with React Server Components
 - Code splitting and lazy loading for optimal bundle sizes
 - Image optimization with Next.js Image component
 - Bundle analysis tools for continuous performance monitoring
 - Intersection Observer API for efficient lazy loading
 
-### 5. **Type Safety**
+### 6. **Type Safety**
 - Strict TypeScript configuration with comprehensive type checking
 - Runtime validation with Zod schemas
 - Component props are fully typed with TypeScript interfaces
 - API responses and data structures have defined types
 
-### 6. **Security Best Practices**
+### 7. **Security Best Practices**
 - Content Security Policy (CSP) headers configured
 - XSS protection and frame options set
 - Secure referrer policies implemented
@@ -766,6 +774,255 @@ export const handlers = [
 
 This comprehensive testing strategy ensures high code quality, prevents regressions, and maintains confidence in deployments across all environments.
 
+## Authentication & Authorization
+
+### Auth.js Integration
+
+Platform Web uses Auth.js (NextAuth v5) for comprehensive authentication and session management, integrated with the existing Spearfish platform API. This provides secure, modern authentication while leveraging your existing user database and authentication logic.
+
+#### Configuration
+
+**Auth.js Setup**:
+- Custom credentials provider for Spearfish API authentication
+- JWT-based sessions for stateless scalability (12-hour expiration)
+- Optional Google OAuth integration for modern sign-in flows
+- Comprehensive TypeScript support with custom user types
+
+**Environment Variables**:
+```bash
+# Required for Auth.js
+AUTH_SECRET=your-32-character-minimum-secret-key
+NEXTAUTH_URL=https://your-domain.com
+
+# Optional OAuth providers
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+#### Authentication Flow
+
+**Spearfish Credentials Provider**:
+```typescript
+// Custom provider authenticates against Spearfish API
+const authResult = await fetch(`${API_URL}/auth/signin`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password })
+})
+
+// Maps Spearfish user to Auth.js session format
+const user = {
+  id: authResult.user.id,
+  email: authResult.user.email,
+  name: authResult.user.fullName,
+  primaryTenantId: authResult.user.primaryTenantId,
+  tenantMemberships: authResult.user.tenantMemberships,
+  roles: authResult.user.roles,
+  authType: 'credentials'
+}
+```
+
+**Session Management**:
+- JWT tokens include Spearfish user data, roles, and tenant information
+- Automatic session refresh every 5 minutes
+- Secure HttpOnly cookies prevent client-side access
+- Session data typed with TypeScript for safety
+
+#### Multi-Tenant Support
+
+**Tenant Context**:
+- Primary tenant ID stored in session for default context
+- Full tenant memberships list for cross-tenant access
+- Tenant-aware utilities for access control
+- Environment isolation through tenant scoping
+
+**Tenant Access Control**:
+```typescript
+import { requireTenantAccess, getTenantMemberships } from '@/lib/auth-utils'
+
+// Server-side tenant validation
+export async function getTenantData(tenantId: number) {
+  await requireTenantAccess(tenantId)
+  // Fetch tenant-specific data
+}
+
+// Client-side tenant context
+const { user } = useSession()
+const hasAccess = user.tenantMemberships.includes(tenantId)
+```
+
+#### Role-Based Access Control
+
+**Spearfish Role System**:
+```typescript
+// Global roles (system-wide access)
+SpearfishRoles.GLOBAL_ADMIN = "GlobalAdminRole"
+SpearfishRoles.DEVOPS = "SpearfishDevOpsRole" 
+SpearfishRoles.SALES_EMPLOYEE = "SpearfishSalesEmployeeRole"
+
+// Tenant-scoped roles
+SpearfishRoles.TENANT_ADMIN = "TenantAdminRole"
+SpearfishRoles.TENANT_USER = "TenantUserRole"
+```
+
+**Role Checking Utilities**:
+```typescript
+// Server-side role validation
+import { requireRole, hasAnyRole } from '@/lib/auth-utils'
+
+export async function adminOnlyFunction() {
+  await requireRole(SpearfishRoles.TENANT_ADMIN)
+  // Admin-only logic
+}
+
+// Client-side role checking
+import { createRoleHelper } from '@/types/auth'
+
+const roleHelper = createRoleHelper(user.roles)
+if (roleHelper.isGlobalAdmin()) {
+  // Show global admin features
+}
+```
+
+#### Route Protection
+
+**Middleware-Based Protection**:
+```typescript
+// middleware.ts - Automatic route protection
+export default auth((req) => {
+  const isAuthenticated = !!req.auth?.user
+  const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
+  
+  // Redirect unauthenticated users to sign-in
+  if (!isAuthenticated && !isAuthPage) {
+    return NextResponse.redirect('/auth/signin')
+  }
+})
+```
+
+**Server Component Protection**:
+```typescript
+import { getCurrentSession, requireAuth } from '@/lib/auth-utils'
+
+export default async function ProtectedPage() {
+  const session = await requireAuth() // Throws if not authenticated
+  
+  return <div>Welcome, {session.user.name}!</div>
+}
+```
+
+**Client Component Protection**:
+```typescript
+'use client'
+import { useSession } from 'next-auth/react'
+
+export function ClientProtectedComponent() {
+  const { data: session, status } = useSession()
+  
+  if (status === 'loading') return <div>Loading...</div>
+  if (!session) return <div>Access denied</div>
+  
+  return <div>Protected content for {session.user.name}</div>
+}
+```
+
+#### Authentication Pages
+
+**Custom Sign-In Page** (`/auth/signin`):
+- Spearfish-branded authentication form
+- Email/password credentials with validation
+- Error handling for invalid credentials
+- Callback URL support for post-login redirects
+- Optional Google OAuth button (if configured)
+
+**Error Handling** (`/auth/error`):
+- Comprehensive error messages for authentication failures
+- User-friendly error codes and descriptions
+- Recovery options and navigation back to sign-in
+
+**Sign-Out Flow** (`/auth/signout`):
+- Confirmation page for sign-out action
+- Proper session cleanup and token invalidation
+- Redirect to sign-in page after logout
+
+#### Session Data Structure
+
+**TypeScript Session Types**:
+```typescript
+interface SpearfishSession {
+  user: {
+    id: string                    // Spearfish user GUID
+    email: string                 // User email address
+    name: string                  // Full display name
+    firstName?: string            // First name
+    lastName?: string             // Last name
+    userName?: string             // Username
+    primaryTenantId: number       // Default tenant context
+    tenantMemberships: number[]   // All accessible tenants
+    roles: string[]               // Spearfish role assignments
+    authType: string              // Authentication method used
+  }
+  tenantId: number               // Current tenant context
+  roles: string[]                // Quick access to roles
+}
+```
+
+#### Security Features
+
+**Token Security**:
+- JWT tokens encrypted with server-side secret
+- Automatic token rotation on each request
+- Short expiration times (12 hours) with sliding renewal
+- Secure, HttpOnly cookies prevent XSS attacks
+
+**Authentication Security**:
+- CSRF protection built into Auth.js
+- Secure password handling (delegated to Spearfish API)
+- Rate limiting through Spearfish API authentication
+- No credential storage in frontend application
+
+**Session Security**:
+- Server-side session validation on every request
+- Automatic session cleanup on browser close
+- Configurable session timeout and renewal
+- Protected against session fixation attacks
+
+#### Integration Benefits
+
+**Seamless API Integration**:
+- No changes required to existing Spearfish authentication API
+- Preserves all existing user data and authentication logic
+- Maintains compatibility with existing role and permission systems
+- Supports future authentication method additions
+
+**Modern Frontend Experience**:
+- React hooks for client-side authentication state
+- Server-side utilities for route protection
+- TypeScript support for type-safe authentication
+- Comprehensive error handling and user feedback
+
+**Scalability & Performance**:
+- Stateless JWT sessions reduce server load
+- Efficient middleware-based route protection
+- Minimal database queries through JWT token data
+- Edge-friendly architecture for global deployment
+
+#### Development & Testing
+
+**Local Development**:
+- Mock authentication responses for development
+- Environment-specific configuration
+- Debug-friendly error messages
+- Session inspection tools
+
+**Production Deployment**:
+- Secure secret management through Vercel environment variables
+- Production-optimized session configuration
+- Monitoring and logging integration
+- Health check endpoints for authentication status
+
+This authentication system provides enterprise-grade security while maintaining ease of use and development productivity, fully integrated with your existing Spearfish platform infrastructure.
+
 ## Security Considerations
 
 ### Content Security Policy
@@ -938,6 +1195,228 @@ if (config.isConfigured) {
 - **Caching**: Browser caching and CDN optimization
 - **Compression**: Gzip and Brotli for asset delivery
 - **Performance Budgets**: Automated monitoring of bundle size and performance metrics
+
+## Component Development & Documentation
+
+### Ladle Integration
+
+Platform Web uses **Ladle** as the primary tool for component development, testing, and documentation. Ladle is a modern, performance-focused alternative to Storybook that's specifically designed for React applications and provides enterprise-grade features without the security and dependency overhead of traditional tools.
+
+#### Why Ladle Over Storybook
+
+**🔒 Security & Dependencies:**
+- **Smaller attack surface** with minimal dependency footprint
+- **No webpack vulnerabilities** (uses Vite + SWC instead)
+- **Fewer npm audit warnings** compared to Storybook's extensive ecosystem
+- **Regular updates** without legacy baggage
+- **Enterprise-safe** for security-conscious organizations
+
+**⚡ Performance Benefits:**
+- **2x faster builds** using SWC compiler instead of Babel
+- **Instant hot reload** via Vite (vs. Storybook's 150ms+ delays)
+- **Swift startup times** for improved developer experience
+- **Optimized for React 18+** and modern development workflows
+
+**🏢 Enterprise Features:**
+- **Proven at scale** (used in 335+ Uber projects)
+- **React-focused** design matching your tech stack
+- **Next.js integration** with documented setup patterns
+- **TypeScript-first** approach for type safety
+
+#### Configuration & Setup
+
+**Installation & Scripts:**
+```bash
+# Development server (auto-opens at localhost:61000)
+npm run ladle
+
+# Build static version for deployment
+npm run ladle:build
+
+# Preview built static version
+npm run ladle:preview
+```
+
+**Directory Structure:**
+```
+.ladle/
+├── config.mjs          # Ladle configuration with Next.js integration
+├── components.tsx      # Global providers (Radix UI Themes)
+└── README.md          # Team workflow documentation
+
+src/components/
+├── ui/
+│   ├── button.stories.tsx      # Button component stories
+│   ├── card.stories.tsx        # Card component stories
+│   └── *.stories.tsx          # Other UI component stories
+└── dashboard/
+    └── metric-card.stories.tsx # Dashboard component stories
+```
+
+#### Radix UI Themes Integration
+
+**Theme Provider Setup:**
+```typescript
+// .ladle/components.tsx - Global wrapper for all stories
+export const Provider: GlobalProvider = ({ children, globalTypes }) => (
+  <Theme
+    accentColor="blue"
+    grayColor="slate"
+    radius="medium"
+    scaling="100%"
+    appearance={globalTypes?.theme || 'light'}
+  >
+    {children}
+  </Theme>
+)
+```
+
+**Global Controls:**
+- **Theme Switcher**: Test components in light/dark themes
+- **Responsive Viewports**: Mobile, tablet, desktop, and wide screen testing
+- **Component Props**: Interactive controls for all component properties
+
+#### Story Development Patterns
+
+**Basic Story Structure:**
+```typescript
+import type { Story } from "@ladle/react"
+import { YourComponent } from "./your-component"
+
+export default {
+  title: "Category/ComponentName",
+  component: YourComponent,
+  argTypes: {
+    variant: {
+      control: { type: "select" },
+      options: ["solid", "soft", "outline"],
+      defaultValue: "solid",
+    },
+  },
+}
+
+export const Default: Story = (args) => (
+  <YourComponent {...args}>Default content</YourComponent>
+)
+
+export const Variants: Story = () => (
+  <div style={{ display: "flex", gap: "var(--space-3)" }}>
+    <YourComponent variant="solid">Solid</YourComponent>
+    <YourComponent variant="soft">Soft</YourComponent>
+    <YourComponent variant="outline">Outline</YourComponent>
+  </div>
+)
+```
+
+**Advanced Story Examples:**
+- **Interactive Stories**: With event handlers and state management
+- **Layout Examples**: Grid and flex layouts with multiple components
+- **Edge Cases**: Loading states, error conditions, empty states
+- **Accessibility Testing**: Focus management and screen reader compatibility
+
+#### Team Development Workflow
+
+**For Developers:**
+1. **Component Creation**: Build React components using pure Radix UI Themes
+2. **Story Writing**: Create comprehensive `.stories.tsx` files
+3. **Variant Testing**: Test all component variants and states in isolation
+4. **Documentation**: Include usage examples and prop documentation
+
+**For Designers:**
+1. **Component Review**: Access Ladle at `http://localhost:61000`
+2. **Theme Testing**: Toggle between light/dark themes
+3. **Responsive Validation**: Test components across different viewports
+4. **Feedback Loop**: Collaborate on component variations and improvements
+
+**For QA Teams:**
+1. **Isolated Testing**: Test components without application complexity
+2. **Accessibility Validation**: Use built-in a11y testing features
+3. **Cross-browser Testing**: Verify component behavior across browsers
+4. **Edge Case Coverage**: Test extreme props and error conditions
+
+#### Enterprise Deployment
+
+**Static Build Deployment:**
+```bash
+# Generate static build
+npm run ladle:build
+
+# Deploy .ladle/build/ directory to:
+# - Vercel/Netlify for team access
+# - Internal hosting for client demos
+# - CDN for global team distribution
+```
+
+**Integration Benefits:**
+- **Design System Documentation**: Living style guide for entire team
+- **Client Presentations**: Professional component showcase
+- **Developer Onboarding**: Interactive component library for new team members
+- **Quality Assurance**: Systematic component testing and validation
+
+#### Security & Maintenance
+
+**Security Advantages:**
+- **Minimal Dependencies**: Reduces vulnerability exposure
+- **Modern Architecture**: No legacy webpack or babel dependencies
+- **Regular Updates**: Active maintenance with quick security patches
+- **Enterprise Adoption**: Proven in production environments
+
+**Maintenance Benefits:**
+- **TypeScript Integration**: Shares same config as main application
+- **Path Aliases**: Consistent `@/` imports across stories and app
+- **Shared Styling**: Same Radix UI Themes and global CSS
+- **Dependency Alignment**: Uses existing project dependencies
+
+#### Performance Characteristics
+
+**Development Performance:**
+- **Instant Hot Reload**: Sub-100ms component updates
+- **Fast Story Loading**: Optimized bundle splitting
+- **Memory Efficient**: Lower resource usage than alternatives
+- **Concurrent Development**: Run alongside Next.js dev server
+
+**Build Performance:**
+- **Production Builds**: 2x faster than Storybook equivalent
+- **Tree Shaking**: Optimized bundle sizes for deployment
+- **Modern Output**: ES2020+ targeting for better performance
+- **CDN Optimization**: Static assets optimized for global distribution
+
+#### Component Story Examples
+
+**Button Component Stories:**
+```typescript
+// Comprehensive button testing
+export const Variants: Story = () => (
+  <Flex gap="3">
+    <Button variant="solid">Solid</Button>
+    <Button variant="soft">Soft</Button>
+    <Button variant="outline">Outline</Button>
+    <Button variant="ghost">Ghost</Button>
+  </Flex>
+)
+
+export const WithIcons: Story = () => (
+  <Button><PlusIcon />Add Item</Button>
+)
+
+export const LoadingStates: Story = () => (
+  <Button loading>Loading...</Button>
+)
+```
+
+**Dashboard Component Stories:**
+```typescript
+// MetricCard with different trends and formats
+export const DashboardLayout: Story = () => (
+  <Grid columns="repeat(auto-fit, minmax(280px, 1fr))" gap="4">
+    <MetricCard title="Users" value="24,567" change="+12.3%" trend="up" />
+    <MetricCard title="Revenue" value="$89,123" change="+8.7%" trend="up" />
+    <MetricCard title="Conversion" value="3.24%" change="-0.5%" trend="down" />
+  </Grid>
+)
+```
+
+This component development setup provides enterprise-grade tooling for building, testing, and documenting React components while maintaining security best practices and optimal performance for team collaboration.
 
 ## Future Enhancements
 

@@ -4,6 +4,7 @@ import * as React from "react";
 import { Button, Flex, Text, Box } from "@radix-ui/themes";
 import { MoonIcon, SunIcon, HamburgerMenuIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
+import { UserInfo } from "@/components/auth/user-info";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -64,6 +65,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
                 <MoonIcon aria-hidden="true" />
               )}
             </Button>
+            <UserInfo />
           </Flex>
         </Flex>
       </header>

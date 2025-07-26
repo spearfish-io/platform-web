@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -19,7 +19,10 @@
     "cypress:component": "cypress open --component",
     "e2e": "start-server-and-test dev http://localhost:3000 cypress:headless",
     "e2e:open": "start-server-and-test dev http://localhost:3000 cypress",
-    "test:all": "npm run test:run && npm run e2e"
+    "test:all": "npm run test:run && npm run e2e",
+    "ladle": "ladle serve",
+    "ladle:build": "ladle build",
+    "ladle:preview": "ladle preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -44,6 +47,7 @@
     "framer-motion": "^12.23.9",
     "lucide-react": "^0.525.0",
     "next": "15.4.4",
+    "next-auth": "^5.0.0-beta.29",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.61.1",
@@ -54,7 +58,9 @@
   "devDependencies": {
     "@cypress/react": "^9.0.1",
     "@eslint/eslintrc": "^3",
+    "@ladle/react": "^5.0.3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -67,10 +73,12 @@
     "cypress": "^14.5.2",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
+    "jest-axe": "^10.0.0",
     "jsdom": "^26.1.0",
     "msw": "^2.10.4",
     "start-server-and-test": "^2.0.12",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }

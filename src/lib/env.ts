@@ -20,8 +20,12 @@ const envSchema = z.object({
   DATABASE_POOL_MAX: z.coerce.number().min(1).max(100).default(10),
   
   // Authentication (Server-side only)
-  NEXTAUTH_SECRET: z.string().min(32).optional(),
-  NEXTAUTH_URL: z.string().url().optional(),
+  AUTH_SECRET: z.string().min(32).optional(), // Auth.js v5 uses AUTH_SECRET
+  NEXTAUTH_URL: z.string().url().optional(), // Still used for Auth.js configuration
+  
+  // OAuth Providers (Server-side only)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
   
   // Third-party Services
   NEXT_PUBLIC_ANALYTICS_ID: z.string().optional(),
@@ -92,7 +96,7 @@ function parseEnv() {
       API_SECRET_KEY: process.env.API_SECRET_KEY,
       DATABASE_URL: process.env.DATABASE_URL,
       DATABASE_POOL_MAX: process.env.DATABASE_POOL_MAX,
-      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+      AUTH_SECRET: process.env.AUTH_SECRET,
       NEXTAUTH_URL: process.env.NEXTAUTH_URL,
       SENTRY_DSN: process.env.SENTRY_DSN,
       VERCEL: process.env.VERCEL,
@@ -102,6 +106,9 @@ function parseEnv() {
       AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID,
       AZURE_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET,
       AZURE_TENANT_ID: process.env.AZURE_TENANT_ID,
+      AUTH_SECRET: process.env.AUTH_SECRET,
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
       DASH0_AUTH_TOKEN: process.env.DASH0_AUTH_TOKEN,
       DASH0_DATASET: process.env.DASH0_DATASET,
       DASH0_TRACE_ENDPOINT: process.env.DASH0_TRACE_ENDPOINT,

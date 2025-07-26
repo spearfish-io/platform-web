@@ -46,3 +46,6 @@ next-env.d.ts
 # Test Screenshots
 cypress/screenshots/
 cypress/videos/
+
+# Ladle build artifacts
+.ladle/build/

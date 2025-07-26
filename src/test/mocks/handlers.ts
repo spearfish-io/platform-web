@@ -80,7 +80,60 @@ export const handlers = [
     return HttpResponse.json({ labels: [], data: [] })
   }),
 
-  // Mock authentication endpoints
+  // Mock Spearfish authentication endpoints  
+  http.post('http://dev-api.spearfish.io/auth/signin', async ({ request }) => {
+    const { email, password } = await request.json() as any
+    
+    // Valid test credentials
+    if (email === 'user@example.com' && password === 'SecureP@ss123') {
+      return HttpResponse.json({
+        success: true,
+        user: {
+          id: 'test-user-id',
+          email: 'user@example.com',
+          fullName: 'Test User',
+          firstName: 'Test',
+          lastName: 'User',
+          userName: 'testuser',
+          primaryTenantId: 1,
+          tenantMemberships: [1],
+          roles: ['TenantUser'],
+          authType: 'credentials',
+        },
+      })
+    }
+    
+    // Admin test credentials
+    if (email === 'admin@example.com' && password === 'AdminP@ss123') {
+      return HttpResponse.json({
+        success: true,
+        user: {
+          id: 'admin-user-id',
+          email: 'admin@example.com',
+          fullName: 'Admin User',
+          firstName: 'Admin',
+          lastName: 'User',
+          userName: 'adminuser',
+          primaryTenantId: 1,
+          tenantMemberships: [1, 2],
+          roles: ['TenantAdmin', 'GlobalAdminRole'],
+          authType: 'credentials',
+        },
+      })
+    }
+    
+    // Invalid credentials
+    return HttpResponse.json(
+      { 
+        success: false,
+        error: 'Invalid credentials',
+        message: 'The email or password you entered is incorrect.'
+      },
+      { status: 401 }
+    )
+  }),
+
+  // Legacy auth endpoint for backward compatibility
   http.post('http://localhost:3001/api/auth/login', async ({ request }) => {
     const { email, password } = await request.json() as any
     

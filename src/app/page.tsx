@@ -1,4 +1,5 @@
 import * as React from "react";
+import { redirect } from "next/navigation";
 import { Container, Grid, Heading, Text, Card, Flex, Box } from "@radix-ui/themes";
 import { 
   DashboardIcon, 
@@ -9,6 +10,7 @@ import {
 import { AppShell } from "@/components/layout/app-shell";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { ChartCard } from "@/components/dashboard/chart-card";
+import { auth } from "@/lib/auth";
 import type { DashboardMetric } from "@/types";
 
 const mockMetrics: DashboardMetric[] = [
@@ -42,7 +44,17 @@ const mockMetrics: DashboardMetric[] = [
   },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  // Check authentication - redirect to login if not authenticated
+  const session = await auth();
+  
+  if (!session?.user) {
+    console.log('🔥 No session found, redirecting to login');
+    redirect('/auth/signin');
+  }
+  
+  console.log('🔥 User authenticated:', session.user.email);
+  
   return (
     <AppShell>
       <Container size="4" p="6">
