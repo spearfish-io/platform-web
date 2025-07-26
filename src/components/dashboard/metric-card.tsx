@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Card, Flex, Text, Box } from "@radix-ui/themes";
-import { TriangleUpIcon, TriangleDownIcon } from "@radix-ui/react-icons";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import type { DashboardMetric } from "@/types";
 
 interface MetricCardProps {
@@ -35,11 +35,11 @@ export function MetricCard({ metric }: MetricCardProps) {
         <Flex align="center" gap="2">
           {change.type === "increase" ? (
             <Box style={{ width: "12px", height: "12px", color: "var(--green-9)" }}>
-              <TriangleUpIcon />
+              <TrendingUp />
             </Box>
           ) : (
             <Box style={{ width: "12px", height: "12px", color: "var(--red-9)" }}>
-              <TriangleDownIcon />
+              <TrendingDown />
             </Box>
           )}
           <Box 

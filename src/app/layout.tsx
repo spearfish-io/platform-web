@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Theme } from "@radix-ui/themes";
 import { AuthSessionProvider } from "@/components/auth/session-provider";
 import { auth } from "@/lib/auth";
+import { MSWProvider } from "@/components/msw-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,17 +33,19 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthSessionProvider session={session}>
-          <Theme
-            accentColor="blue"
-            grayColor="slate"
-            radius="medium"
-            scaling="100%"
-            appearance="inherit"
-          >
-            {children}
-          </Theme>
-        </AuthSessionProvider>
+        <MSWProvider>
+          <AuthSessionProvider session={session}>
+            <Theme
+              accentColor="blue"
+              grayColor="slate"
+              radius="medium"
+              scaling="100%"
+              appearance="inherit"
+            >
+              {children}
+            </Theme>
+          </AuthSessionProvider>
+        </MSWProvider>
       </body>
     </html>
   );

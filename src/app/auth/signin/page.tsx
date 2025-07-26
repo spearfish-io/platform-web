@@ -80,14 +80,15 @@ export default function SignInPage() {
           <Flex direction="column" gap="2" align="center">
             <Text size="1" color="gray" style={{ textAlign: "center" }}>
               Having trouble signing in?{" "}
-              <Text 
-                as="a" 
+              <a 
                 href="mailto:support@spearfish.io"
-                color="blue"
-                style={{ textDecoration: "underline" }}
+                style={{ 
+                  color: "var(--blue-11)", 
+                  textDecoration: "underline" 
+                }}
               >
                 Contact Support
-              </Text>
+              </a>
             </Text>
             
             <Text size="1" color="gray" style={{ textAlign: "center" }}>

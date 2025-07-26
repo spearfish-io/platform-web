@@ -80,77 +80,144 @@ export const handlers = [
     return HttpResponse.json({ labels: [], data: [] })
   }),
 
-  // Mock Spearfish authentication endpoints  
-  http.post('http://dev-api.spearfish.io/auth/signin', async ({ request }) => {
+  // Mock Spearfish platform-api authentication endpoints
+  http.post('http://localhost:5000/api/auth/login', async ({ request }) => {
     const { email, password } = await request.json() as any
     
-    // Valid test credentials
-    if (email === 'user@example.com' && password === 'SecureP@ss123') {
+    console.log('🔥 MSW intercepted auth request:', { email, hasPassword: !!password })
+    
+    // Admin test credentials (matches simplified form validation)
+    if (email === 'admin@spearfish.io' && password === 'password123') {
       return HttpResponse.json({
         success: true,
         user: {
-          id: 'test-user-id',
-          email: 'user@example.com',
+          id: 'user-123-456-789',
+          email: 'admin@spearfish.io',
+          fullName: 'John Admin',
+          firstName: 'John',
+          lastName: 'Admin',
+          userName: 'jadmin',
+          primaryTenantId: 1,
+          tenantMemberships: [1, 2, 3],
+          roles: ['GlobalAdminRole', 'TenantAdminRole'],
+          authType: 'Password',
+        },
+        message: 'Authentication successful'
+      })
+    }
+    
+    // Regular user test credentials
+    if (email === 'user@spearfish.io' && password === 'user123456') {
+      return HttpResponse.json({
+        success: true,
+        user: {
+          id: 'user-456-789-123',
+          email: 'user@spearfish.io',
+          fullName: 'Jane User',
+          firstName: 'Jane',
+          lastName: 'User',
+          userName: 'juser',
+          primaryTenantId: 1,
+          tenantMemberships: [1],
+          roles: ['TenantUserRole'],
+          authType: 'Password',
+        },
+        message: 'Authentication successful'
+      })
+    }
+    
+    // Test user with simple credentials
+    if (email === 'test@example.com' && password === 'test12345') {
+      return HttpResponse.json({
+        success: true,
+        user: {
+          id: 'user-789-123-456',
+          email: 'test@example.com',
           fullName: 'Test User',
           firstName: 'Test',
           lastName: 'User',
           userName: 'testuser',
-          primaryTenantId: 1,
-          tenantMemberships: [1],
-          roles: ['TenantUser'],
-          authType: 'credentials',
+          primaryTenantId: 2,
+          tenantMemberships: [2],
+          roles: ['TenantUserRole'],
+          authType: 'Password',
         },
-      })
-    }
-    
-    // Admin test credentials
-    if (email === 'admin@example.com' && password === 'AdminP@ss123') {
-      return HttpResponse.json({
-        success: true,
-        user: {
-          id: 'admin-user-id',
-          email: 'admin@example.com',
-          fullName: 'Admin User',
-          firstName: 'Admin',
-          lastName: 'User',
-          userName: 'adminuser',
-          primaryTenantId: 1,
-          tenantMemberships: [1, 2],
-          roles: ['TenantAdmin', 'GlobalAdminRole'],
-          authType: 'credentials',
-        },
+        message: 'Authentication successful'
       })
     }
     
     // Invalid credentials
+    console.log('🔥 MSW returning auth failure for:', email)
     return HttpResponse.json(
       { 
         success: false,
         error: 'Invalid credentials',
-        message: 'The email or password you entered is incorrect.'
+        message: 'Invalid email or password. Please check your credentials and try again.'
       },
       { status: 401 }
     )
   }),
 
-  // Legacy auth endpoint for backward compatibility
+  // Mock other Spearfish API endpoints
+  http.get('http://localhost:5000/api/auth/session', () => {
+    return HttpResponse.json({
+      user: {
+        id: 'user-123-456-789',
+        email: 'admin@spearfish.io',
+        fullName: 'John Admin',
+        firstName: 'John',
+        lastName: 'Admin',
+        userName: 'jadmin',
+        primaryTenantId: 1,
+        tenantMemberships: [1, 2, 3],
+        roles: ['GlobalAdminRole', 'TenantAdminRole'],
+        authType: 'Password',
+      },
+      isAuthenticated: true,
+      tenantId: 1,
+      version: {
+        api: '1.0.0',
+        build: 'mock-msw'
+      }
+    })
+  }),
+
+  http.post('http://localhost:5000/api/auth/logout', () => {
+    console.log('🔥 MSW intercepted logout request')
+    return HttpResponse.json({ 
+      success: true, 
+      message: 'Logged out successfully' 
+    })
+  }),
+
+  // Platform-web internal API route (this calls the above mock)
   http.post('http://localhost:3001/api/auth/login', async ({ request }) => {
-    const { email, password } = await request.json() as any
+    const credentials = await request.json() as any
     
-    if (email === 'admin@example.com' && password === 'password') {
+    console.log('🔥 MSW intercepted platform-web API route:', credentials.email)
+    
+    // This would normally proxy to platform-api, but we'll handle it directly
+    if (credentials.email === 'admin@spearfish.io' && credentials.password === 'password123') {
       return HttpResponse.json({
-        token: 'mock-jwt-token',
+        success: true,
         user: {
-          id: '1',
-          email: 'admin@example.com',
-          name: 'Admin User',
-          role: 'admin',
+          id: 'user-123-456-789',
+          email: 'admin@spearfish.io',
+          fullName: 'John Admin',
+          firstName: 'John',
+          lastName: 'Admin',
+          userName: 'jadmin',
+          primaryTenantId: 1,
+          tenantMemberships: [1, 2, 3],
+          roles: ['GlobalAdminRole', 'TenantAdminRole'],
+          authType: 'Password',
         },
+        message: 'Authentication successful'
       })
     }
     
     return HttpResponse.json(
-      { error: 'Invalid credentials' },
+      { error: 'Authentication failed' },
       { status: 401 }
     )
   }),

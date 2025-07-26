@@ -30,6 +30,6 @@
       "@/hooks/*": ["./src/hooks/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js", ".next/types/**/*.ts", ".ladle"],
   "exclude": ["node_modules"]
 }

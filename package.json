@@ -20,9 +20,14 @@
     "e2e": "start-server-and-test dev http://localhost:3000 cypress:headless",
     "e2e:open": "start-server-and-test dev http://localhost:3000 cypress",
     "test:all": "npm run test:run && npm run e2e",
-    "ladle": "ladle serve",
+    "ladle": "node --import ./tsx-loader.mjs node_modules/.bin/ladle serve",
     "ladle:build": "ladle build",
-    "ladle:preview": "ladle preview"
+    "ladle:preview": "ladle preview",
+    "tsx": "tsx",
+    "ts-exec": "tsx",
+    "auth:mock": "node scripts/auth-mode.js mock",
+    "auth:real": "node scripts/auth-mode.js real",
+    "auth:status": "node scripts/auth-mode.js status"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -81,5 +86,10 @@
     "tsx": "^4.20.3",
     "typescript": "^5",
     "vitest": "^3.2.4"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

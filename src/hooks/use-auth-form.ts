@@ -216,13 +216,7 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     })
   }, [form])
 
-  /**
-   * Check if form can be submitted
-   * More lenient check to handle autofill scenarios
-   */
-  const formValues = form.watch()
-  const hasBasicValues = formValues.email?.length > 0 && formValues.password?.length >= 8
-  const canSubmit = !formState.isLoading && !formState.isLocked && (form.formState.isValid || hasBasicValues)
+  // Form submission is now always allowed (validation happens on submit)
 
   /**
    * Get current error to display (URL error takes precedence)
@@ -237,7 +231,6 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     // Form state
     isLoading: formState.isLoading,
     error: currentError,
-    canSubmit,
     attemptCount: formState.attemptCount,
     isLocked: formState.isLocked,
     lockoutEndsAt: formState.lockoutEndsAt,

@@ -1,6 +1,6 @@
-import type { Story } from "@ladle/react"
+import type { StoryDefault, Story } from "@ladle/react"
 import { Button } from "./button"
-import { PlusIcon, UpdateIcon, CheckIcon, CrossIcon } from "@radix-ui/react-icons"
+import { Plus, RotateCcw, Check, X } from "lucide-react"
 
 /**
  * Button Component Stories
@@ -9,10 +9,11 @@ import { PlusIcon, UpdateIcon, CheckIcon, CrossIcon } from "@radix-ui/react-icon
  * for design system documentation and testing.
  */
 
+type ButtonProps = React.ComponentProps<typeof Button>;
+
 // Default export defines the component and metadata
 export default {
   title: "UI Components/Button",
-  component: Button,
   argTypes: {
     variant: {
       control: { type: "select" },
@@ -43,12 +44,12 @@ export default {
       defaultValue: false,
     },
   },
-}
+} satisfies StoryDefault<ButtonProps>
 
 /**
  * Default Button Story
  */
-export const Default: Story = (args) => (
+export const Default: Story<ButtonProps> = (args) => (
   <Button {...args}>
     Click me
   </Button>
@@ -104,19 +105,19 @@ export const Sizes: Story = () => (
 export const WithIcons: Story = () => (
   <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center", flexWrap: "wrap" }}>
     <Button>
-      <PlusIcon />
+      <Plus />
       Add Item
     </Button>
     <Button variant="soft" color="green">
-      <CheckIcon />
+      <Check />
       Success
     </Button>
     <Button variant="soft" color="red">
-      <CrossIcon />
+      <X />
       Cancel
     </Button>
     <Button variant="outline">
-      <UpdateIcon />
+      <RotateCcw />
       Refresh
     </Button>
   </div>

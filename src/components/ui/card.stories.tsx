@@ -1,7 +1,7 @@
 import type { Story } from "@ladle/react"
 import { Card } from "./card"
 import { Button, Text, Heading, Flex, Badge } from "@radix-ui/themes"
-import { PersonIcon, GearIcon, StarIcon } from "@radix-ui/react-icons"
+import { User, Settings, Star } from "lucide-react"
 
 /**
  * Card Component Stories
@@ -107,7 +107,7 @@ export const ProfileCard: Story = () => (
           justifyContent: "center",
           color: "white"
         }}>
-          <PersonIcon width="24" height="24" />
+          <User width="24" height="24" />
         </div>
         
         <Flex direction="column" gap="1">
@@ -145,7 +145,7 @@ export const SettingsCard: Story = () => (
   <Card size="4" style={{ maxWidth: "400px" }}>
     <Flex direction="column" gap="4">
       <Flex align="center" gap="3">
-        <GearIcon width="20" height="20" />
+        <Settings width="20" height="20" />
         <Heading size="4">Account Settings</Heading>
       </Flex>
       
@@ -191,7 +191,7 @@ export const FeatureCard: Story = () => (
   <Card size="3" style={{ maxWidth: "320px" }}>
     <Flex direction="column" gap="3">
       <Flex align="center" gap="2">
-        <StarIcon width="18" height="18" color="var(--yellow-9)" />
+        <Star width="18" height="18" color="var(--yellow-9)" />
         <Badge color="yellow" size="1">Premium</Badge>
       </Flex>
       

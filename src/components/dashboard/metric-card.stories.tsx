@@ -1,62 +1,22 @@
 import type { Story } from "@ladle/react"
 import { MetricCard } from "./metric-card"
-import { TrendingUpIcon, TrendingDownIcon, BarChartIcon, PieChartIcon } from "@radix-ui/react-icons"
+import { TrendingUp, TrendingDown, BarChart3, PieChart } from "lucide-react"
 
 /**
- * MetricCard Component Stories
+ * MetricCard Component Stories - Simplified
  * 
- * Demonstrates different metric card configurations for
- * dashboard and analytics display components.
+ * Demonstrates MetricCard with correct prop structure
  */
 
 export default {
   title: "Dashboard/MetricCard",
   component: MetricCard,
-  argTypes: {
-    title: {
-      control: { type: "text" },
-      defaultValue: "Total Users",
-    },
-    value: {
-      control: { type: "text" },
-      defaultValue: "12,345",
-    },
-    change: {
-      control: { type: "text" },
-      defaultValue: "+12.5%",
-    },
-    trend: {
-      control: { type: "select" },
-      options: ["up", "down", "neutral"],
-      defaultValue: "up",
-    },
-    loading: {
-      control: { type: "boolean" },
-      defaultValue: false,
-    },
-  },
 }
 
 /**
- * Default Metric Card
+ * Basic MetricCard Examples
  */
-export const Default: Story = (args) => (
-  <div style={{ maxWidth: "300px" }}>
-    <MetricCard {...args} />
-  </div>
-)
-
-Default.args = {
-  title: "Total Users",
-  value: "12,345",
-  change: "+12.5%",
-  trend: "up",
-}
-
-/**
- * Positive Trend Metrics
- */
-export const PositiveTrends: Story = () => (
+export const BasicExamples: Story = () => (
   <div style={{ 
     display: "grid", 
     gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
@@ -64,288 +24,90 @@ export const PositiveTrends: Story = () => (
     maxWidth: "900px"
   }}>
     <MetricCard
-      title="Total Revenue"
-      value="$45,678"
-      change="+8.3%"
-      trend="up"
-      icon={<TrendingUpIcon />}
+      metric={{
+        id: "1",
+        title: "Total Revenue",
+        value: "$45,678",
+        change: {
+          value: 8.3,
+          type: "increase"
+        },
+        icon: TrendingUp
+      }}
     />
     
     <MetricCard
-      title="Active Users"
-      value="2,456"
-      change="+15.2%"
-      trend="up"
-      icon={<BarChartIcon />}
+      metric={{
+        id: "2",
+        title: "Active Users",
+        value: "2,456",
+        change: {
+          value: 15.2,
+          type: "increase"
+        },
+        icon: BarChart3
+      }}
     />
     
     <MetricCard
-      title="Conversion Rate"
-      value="3.4%"
-      change="+0.8%"
-      trend="up"
-      icon={<PieChartIcon />}
+      metric={{
+        id: "3",
+        title: "Bounce Rate",
+        value: "45.2%",
+        change: {
+          value: -3.1,
+          type: "decrease"
+        },
+        icon: TrendingDown
+      }}
     />
   </div>
 )
 
 /**
- * Negative Trend Metrics
+ * Without Change Indicators
  */
-export const NegativeTrends: Story = () => (
+export const WithoutChange: Story = () => (
   <div style={{ 
     display: "grid", 
     gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
     gap: "var(--space-4)",
-    maxWidth: "900px"
+    maxWidth: "600px"
   }}>
     <MetricCard
-      title="Bounce Rate"
-      value="45.2%"
-      change="-3.1%"
-      trend="down"
-      icon={<TrendingDownIcon />}
+      metric={{
+        id: "4",
+        title: "Total Users",
+        value: "12,847",
+        icon: BarChart3
+      }}
     />
     
     <MetricCard
-      title="Server Errors"
-      value="23"
-      change="-12.5%"
-      trend="down"
-    />
-    
-    <MetricCard
-      title="Load Time"
-      value="2.3s"
-      change="-0.4s"
-      trend="down"
+      metric={{
+        id: "5",
+        title: "Success Rate",
+        value: "98.5%",
+        icon: PieChart
+      }}
     />
   </div>
 )
 
 /**
- * Neutral/No Change Metrics
+ * Large Numbers
  */
-export const NeutralTrends: Story = () => (
-  <div style={{ 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
-    gap: "var(--space-4)",
-    maxWidth: "900px"
-  }}>
-    <MetricCard
-      title="Page Views"
-      value="89,123"
-      change="0.0%"
-      trend="neutral"
-    />
-    
-    <MetricCard
-      title="Session Duration"
-      value="4m 32s"
-      change="+0.1%"
-      trend="neutral"
-    />
-    
-    <MetricCard
-      title="API Calls"
-      value="1,234,567"
-      trend="neutral"
-    />
-  </div>
-)
-
-/**
- * Loading States
- */
-export const LoadingStates: Story = () => (
-  <div style={{ 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
-    gap: "var(--space-4)",
-    maxWidth: "700px"
-  }}>
-    <MetricCard
-      title="Total Users"
-      loading={true}
-    />
-    
-    <MetricCard
-      title="Revenue"
-      loading={true}
-    />
-    
-    <MetricCard
-      title="Conversion Rate"
-      loading={true}
-    />
-  </div>
-)
-
-/**
- * Different Value Formats
- */
-export const ValueFormats: Story = () => (
-  <div style={{ 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
-    gap: "var(--space-4)",
-    maxWidth: "900px"
-  }}>
-    <MetricCard
-      title="Currency"
-      value="$1,234,567"
-      change="+5.2%"
-      trend="up"
-    />
-    
-    <MetricCard
-      title="Percentage"
-      value="67.8%"
-      change="-2.1%"
-      trend="down"
-    />
-    
-    <MetricCard
-      title="Large Numbers"
-      value="2.4M"
-      change="+125K"
-      trend="up"
-    />
-    
-    <MetricCard
-      title="Time Duration"
-      value="3m 45s"
-      change="+12s"
-      trend="up"
-    />
-    
-    <MetricCard
-      title="Decimal Values"
-      value="98.76"
-      change="+1.23"
-      trend="up"
-    />
-    
-    <MetricCard
-      title="Scientific Notation"
-      value="1.2e6"
-      change="+3.4e4"
-      trend="up"
-    />
-  </div>
-)
-
-/**
- * Interactive Metric Card
- */
-export const Interactive: Story = (args) => {
-  const handleClick = () => {
-    alert(`Clicked on ${args.title} metric!`)
-  }
-
-  return (
-    <div style={{ maxWidth: "300px" }}>
-      <div 
-        onClick={handleClick}
-        style={{ cursor: "pointer" }}
-        title="Click to view details"
-      >
-        <MetricCard {...args} />
-      </div>
-    </div>
-  )
-}
-
-Interactive.args = {
-  title: "Click Me",
-  value: "Interactive",
-  change: "+100%",
-  trend: "up",
-}
-
-/**
- * Real Dashboard Layout Example
- */
-export const DashboardLayout: Story = () => (
-  <div style={{ maxWidth: "1200px" }}>
-    <div style={{ 
-      display: "grid", 
-      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
-      gap: "var(--space-4)",
-      marginBottom: "var(--space-6)"
-    }}>
-      <MetricCard
-        title="Total Users"
-        value="24,567"
-        change="+12.3%"
-        trend="up"
-        icon={<BarChartIcon />}
-      />
-      
-      <MetricCard
-        title="Monthly Revenue"
-        value="$89,123"
-        change="+8.7%"
-        trend="up"
-        icon={<TrendingUpIcon />}
-      />
-      
-      <MetricCard
-        title="Conversion Rate"
-        value="3.24%"
-        change="-0.5%"
-        trend="down"
-        icon={<PieChartIcon />}
-      />
-      
-      <MetricCard
-        title="Avg. Session Time"
-        value="4m 32s"
-        change="+45s"
-        trend="up"
-      />
-    </div>
-    
-    <div style={{ 
-      display: "grid", 
-      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
-      gap: "var(--space-3)"
-    }}>
-      <MetricCard
-        title="Page Views"
-        value="156K"
-        change="+2.1%"
-        trend="up"
-      />
-      
-      <MetricCard
-        title="Bounce Rate"
-        value="42.1%"
-        change="-1.8%"
-        trend="down"
-      />
-      
-      <MetricCard
-        title="New Users"
-        value="3,421"
-        change="+15.6%"
-        trend="up"
-      />
-      
-      <MetricCard
-        title="Server Uptime"
-        value="99.9%"
-        change="0.0%"
-        trend="neutral"
-      />
-      
-      <MetricCard
-        title="API Response"
-        value="234ms"
-        change="-12ms"
-        trend="down"
-      />
-    </div>
-  </div>
+export const LargeNumbers: Story = () => (
+  <MetricCard
+    metric={{
+      id: "6",
+      title: "Total Transactions",
+      value: 1234567,
+      change: {
+        value: 12.4,
+        type: "increase"
+      },
+      icon: TrendingUp
+    }}
+  />
 )

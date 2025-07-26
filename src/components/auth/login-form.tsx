@@ -47,7 +47,6 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
       onSubmit,
       isLoading,
       error,
-      canSubmit,
       attemptCount,
       isLocked,
       lockoutEndsAt,
@@ -67,49 +66,29 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
       setShowPassword(prev => !prev)
     }
 
-    // Handle browser autofill detection - robust approach for Edge
+    // Simple autofill detection - just sync form values with DOM when needed
     useEffect(() => {
-      const detectAutofill = () => {
+      const syncFormWithDOM = () => {
         const emailInput = document.getElementById('login-email') as HTMLInputElement
         const passwordInput = document.getElementById('login-password') as HTMLInputElement
         
-        if (emailInput?.value && passwordInput?.value) {
-          console.log('🔥 Autofill detected:', { email: emailInput.value, hasPassword: !!passwordInput.value })
-          // Trigger form validation if both fields are autofilled
-          form.setValue('email', emailInput.value, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
-          form.setValue('password', passwordInput.value, { shouldValidate: true, shouldDirty: true, shouldTouch: true })
-          // Force validation
-          form.trigger()
+        if (emailInput?.value && emailInput.value !== form.getValues('email')) {
+          form.setValue('email', emailInput.value)
+        }
+        if (passwordInput?.value && passwordInput.value !== form.getValues('password')) {
+          form.setValue('password', passwordInput.value)
         }
       }
 
-      // Multiple checks for different browsers and timing
+      // Check for autofill a few times after mount
       const timers = [
-        setTimeout(detectAutofill, 100),
-        setTimeout(detectAutofill, 300),
-        setTimeout(detectAutofill, 500),
-        setTimeout(detectAutofill, 1000),
+        setTimeout(syncFormWithDOM, 100),
+        setTimeout(syncFormWithDOM, 500),
+        setTimeout(syncFormWithDOM, 1000),
       ]
-      
-      // Also listen for input events which sometimes fire with autofill
-      const handleInputEvent = () => {
-        setTimeout(detectAutofill, 50)
-      }
-      
-      const emailInput = document.getElementById('login-email')
-      const passwordInput = document.getElementById('login-password')
-      
-      emailInput?.addEventListener('input', handleInputEvent)
-      passwordInput?.addEventListener('input', handleInputEvent)
-      emailInput?.addEventListener('change', handleInputEvent)
-      passwordInput?.addEventListener('change', handleInputEvent)
       
       return () => {
         timers.forEach(clearTimeout)
-        emailInput?.removeEventListener('input', handleInputEvent)
-        passwordInput?.removeEventListener('input', handleInputEvent)
-        emailInput?.removeEventListener('change', handleInputEvent)
-        passwordInput?.removeEventListener('change', handleInputEvent)
       }
     }, [form])
 
@@ -308,12 +287,11 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
           <Button 
             type="submit" 
             size="3" 
-            disabled={!canSubmit}
+            disabled={isLoading || isLocked}
             loading={isLoading}
             style={{ 
               width: "100%", 
-              marginTop: "var(--space-2)",
-              cursor: canSubmit ? "pointer" : "not-allowed"
+              marginTop: "var(--space-2)"
             }}
             aria-describedby="submit-button-description"
           >
