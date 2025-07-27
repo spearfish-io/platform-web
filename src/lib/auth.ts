@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import { env } from "@/lib/env"
+import { getAuthMode } from "@/lib/auth-mode"
 import type { SpearfishAuthResponse, SpearfishCredentials, SpearfishUser } from "@/types/auth"
 
 /**
@@ -101,6 +102,43 @@ export const authConfig = {
     }),
 
     /**
+     * Spearfish OAuth Provider (Modern OAuth 2.0)
+     * Uses the proper OAuth 2.0 endpoints from the Identity API
+     */
+    ...(getAuthMode() === 'oauth' ? [{
+      id: "spearfish-oauth",
+      name: "Spearfish OAuth",
+      type: "oauth" as const,
+      clientId: "platform-web-dev", // Pre-configured client in Identity API
+      clientSecret: undefined, // Public client (PKCE)
+      issuer: env.NEXT_PUBLIC_API_URL.replace(/\/$/, ''), // Remove trailing slash
+      wellKnown: `${env.NEXT_PUBLIC_API_URL}.well-known/openid-configuration`,
+      authorization: {
+        params: {
+          scope: "openid profile email tenant:read user:read",
+          response_type: "code",
+          code_challenge_method: "S256", // PKCE
+        }
+      },
+      checks: ["pkce", "state"],
+      profile(profile: any) {
+        // Map OAuth profile to Spearfish user format
+        return {
+          id: profile.sub,
+          email: profile.email,
+          name: profile.name,
+          firstName: profile.given_name,
+          lastName: profile.family_name,
+          userName: profile.preferred_username,
+          primaryTenantId: profile.tenant_id || profile.primary_tenant_id,
+          tenantMemberships: profile.tenant_memberships || [profile.tenant_id || profile.primary_tenant_id],
+          roles: profile.roles || [],
+          authType: 'oauth',
+        }
+      }
+    }] : []),
+
+    /**
      * Google OAuth Provider (Optional)
      * Enables Google authentication if configured
      */
@@ -142,6 +180,18 @@ export const authConfig = {
         token.roles = user.roles || []
         token.tenantMemberships = user.tenantMemberships || []
         token.authType = user.authType
+        token.firstName = user.firstName
+        token.lastName = user.lastName
+        token.userName = user.userName
+      }
+
+      // Handle Spearfish OAuth
+      if (account?.provider === "spearfish-oauth" && user) {
+        token.id = user.id
+        token.tenantId = user.primaryTenantId
+        token.roles = user.roles || []
+        token.tenantMemberships = user.tenantMemberships || []
+        token.authType = 'oauth'
         token.firstName = user.firstName
         token.lastName = user.lastName
         token.userName = user.userName

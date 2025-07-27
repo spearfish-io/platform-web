@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { loginFormSchema, type LoginFormData, authValidation } from "@/lib/auth-validation"
 import { useAuthMonitoring } from "@/lib/auth-monitoring"
+import { getAuthMode } from "@/lib/auth-mode"
 
 /**
  * Authentication Form Hook
@@ -114,12 +115,25 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
       // Track login attempt
       monitoring.trackLoginAttempt(sanitizedData.email, 'credentials')
 
-      // Attempt authentication
-      const result = await signIn("spearfish", {
-        email: sanitizedData.email,
-        password: sanitizedData.password,
-        redirect: false,
-      })
+      // Determine authentication method based on auth mode
+      const authMode = getAuthMode()
+      
+      let result;
+      if (authMode === 'oauth') {
+        // For OAuth mode, redirect to authorization endpoint
+        result = await signIn('spearfish-oauth', {
+          redirect: false,
+          callbackUrl: callbackUrl,
+        })
+      } else {
+        // For credentials/legacy mode, use email/password
+        result = await signIn('spearfish', {
+          email: sanitizedData.email,
+          password: sanitizedData.password,
+          redirect: false,
+          callbackUrl: callbackUrl,
+        })
+      }
 
       if (result?.error) {
         // Handle authentication failure

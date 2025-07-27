@@ -1,24 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isUsingMockAuth } from '@/lib/auth-mode'
+import { isUsingMockAuth, isUsingLegacyAuth, getAuthMode } from '@/lib/auth-mode'
 
 /**
  * Login API Route
  * 
- * Handles authentication requests either through mocks or by proxying 
- * to the Spearfish API server based on authentication mode.
+ * Handles authentication requests through:
+ * - Mock authentication (MSW test credentials)
+ * - OAuth platform-api (modern OAuth 2.0)
+ * - Legacy authentication (cookie-based portal-spearfish style)
  */
 export async function POST(request: NextRequest) {
   try {
     const credentials = await request.json()
     console.log('🔥 Login request received:', { email: credentials.email, hasPassword: !!credentials.password })
     
-    // Check authentication mode
-    if (isUsingMockAuth()) {
-      console.log('🔧 Using mock authentication')
-      return handleMockAuthentication(credentials)
-    } else {
-      console.log('🔗 Proxying to real platform-api')
-      return handleRealAuthentication(credentials)
+    const authMode = getAuthMode()
+    console.log(`🔧 Authentication mode: ${authMode}`)
+    
+    // Route to appropriate authentication handler
+    switch (authMode) {
+      case 'mock':
+        console.log('🔧 Using mock authentication')
+        return handleMockAuthentication(credentials)
+      
+      case 'legacy':
+        console.log('🍪 Using legacy cookie-based authentication')
+        return handleLegacyAuthentication(credentials, request)
+      
+      case 'oauth':
+      default:
+        console.log('🔗 Using OAuth 2.0 platform-api')
+        return handleOAuthAuthentication(credentials)
     }
     
   } catch (error) {
@@ -41,7 +53,7 @@ async function handleMockAuthentication(credentials: any) {
     {
       id: 'user-123-456-789',
       email: 'admin@spearfish.io',
-      password: 'password123',
+      password: 'Password123!',
       fullName: 'John Admin',
       firstName: 'John',
       lastName: 'Admin',
@@ -54,7 +66,7 @@ async function handleMockAuthentication(credentials: any) {
     {
       id: 'user-456-789-123',
       email: 'user@spearfish.io',
-      password: 'user123456',
+      password: 'UserPass123!',
       fullName: 'Jane User',
       firstName: 'Jane',
       lastName: 'User',
@@ -67,7 +79,7 @@ async function handleMockAuthentication(credentials: any) {
     {
       id: 'user-789-123-456',
       email: 'test@example.com',
-      password: 'test12345',
+      password: 'TestPass123!',
       fullName: 'Test User',
       firstName: 'Test',
       lastName: 'User',
@@ -118,15 +130,15 @@ async function handleMockAuthentication(credentials: any) {
 }
 
 /**
- * Handle real authentication (proxy to platform-api)
+ * Handle OAuth authentication (proxy to platform-api)
  */
-async function handleRealAuthentication(credentials: any) {
-  const spearfishApiUrl = `${process.env.NEXT_PUBLIC_API_URL}api/auth/login?useCookies=true&useSessionCookies=true`
+async function handleOAuthAuthentication(credentials: any) {
+  const platformApiUrl = `${process.env.NEXT_PUBLIC_API_URL}api/auth/login?useCookies=true&useSessionCookies=true`
   
-  console.log('🔥 Proxying login request to:', spearfishApiUrl)
+  console.log('🔥 Proxying OAuth login request to:', platformApiUrl)
   console.log('🔥 Credentials:', { email: credentials.email, hasPassword: !!credentials.password })
   
-  const response = await fetch(spearfishApiUrl, {
+  const response = await fetch(platformApiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -146,9 +158,108 @@ async function handleRealAuthentication(credentials: any) {
     )
   }
   
-  const result = await response.json()
+  // Get response data - handle empty response from cookie-based auth
+  let result: any = {}
+  const responseText = await response.text()
+  
+  if (responseText && responseText.trim()) {
+    try {
+      result = JSON.parse(responseText)
+    } catch (parseError) {
+      console.log('🔥 Platform-api returned non-JSON response (likely empty - normal for cookie auth)')
+    }
+  } else {
+    console.log('🔥 Platform-api returned empty response (normal for cookie-based auth)')
+  }
+  
   console.log('🔥 Platform-api login successful')
   
-  // Forward the response from Spearfish API
-  return NextResponse.json(result)
+  // For OAuth mode using legacy endpoint, create minimal response
+  return NextResponse.json({
+    success: true,
+    user: result.user || {
+      // Minimal user data - the real data will be in the cookie claims
+      email: credentials.email,
+      authType: 'Password'
+    },
+    message: 'Authentication successful'
+  })
+}
+
+/**
+ * Handle legacy authentication (cookie-based portal-spearfish style)
+ */
+async function handleLegacyAuthentication(credentials: any, request: NextRequest) {
+  const legacyApiUrl = `${process.env.NEXT_PUBLIC_API_URL}api/auth/login?useCookies=true`
+  
+  console.log('🔥 Proxying legacy login request to:', legacyApiUrl)
+  console.log('🔥 Credentials:', { email: credentials.email, hasPassword: !!credentials.password })
+  
+  // Forward all cookies from the incoming request
+  const cookieHeader = request.headers.get('cookie') || ''
+  
+  const response = await fetch(legacyApiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Cookie': cookieHeader,
+    },
+    body: JSON.stringify(credentials),
+    // Important: Don't use credentials: 'include' here as we're manually forwarding cookies
+  })
+  
+  console.log('🔥 Legacy API response:', response.status, response.statusText)
+  
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('🔥 Legacy API login failed:', errorText)
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Authentication failed',
+        message: 'Invalid email or password. Please check your credentials and try again.'
+      },
+      { status: response.status }
+    )
+  }
+  
+  // Get response data - handle empty response from cookie-based auth
+  let result: any = {}
+  const responseText = await response.text()
+  
+  if (responseText && responseText.trim()) {
+    try {
+      result = JSON.parse(responseText)
+    } catch (parseError) {
+      console.log('🔥 Legacy API returned non-JSON response (likely empty - normal for cookie auth)')
+    }
+  } else {
+    console.log('🔥 Legacy API returned empty response (normal for cookie-based auth)')
+  }
+  
+  console.log('🔥 Legacy API login successful')
+  
+  // Create response and forward Set-Cookie headers
+  // For legacy cookie auth, we create a minimal user object from what we can infer
+  const nextResponse = NextResponse.json({
+    success: true,
+    user: result.user || {
+      // Minimal user data - the real data will be in the cookie claims
+      email: credentials.email,
+      authType: 'Password'
+    },
+    message: 'Authentication successful'
+  })
+  
+  // Forward all Set-Cookie headers from the legacy API
+  const setCookieHeaders = response.headers.getSetCookie()
+  if (setCookieHeaders && setCookieHeaders.length > 0) {
+    setCookieHeaders.forEach(cookie => {
+      nextResponse.headers.append('Set-Cookie', cookie)
+    })
+    console.log('🍪 Forwarded cookies:', setCookieHeaders.length)
+  }
+  
+  return nextResponse
 }

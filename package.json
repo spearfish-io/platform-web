@@ -26,6 +26,8 @@
     "tsx": "tsx",
     "ts-exec": "tsx",
     "auth:mock": "node scripts/auth-mode.js mock",
+    "auth:oauth": "node scripts/auth-mode.js oauth",
+    "auth:legacy": "node scripts/auth-mode.js legacy",
     "auth:real": "node scripts/auth-mode.js real",
     "auth:status": "node scripts/auth-mode.js status"
   },

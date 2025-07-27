@@ -5,6 +5,9 @@ import { Button, TextField, Flex, Text, Callout, Box, Switch } from "@radix-ui/t
 import { ExclamationTriangleIcon, EyeOpenIcon, EyeClosedIcon, LockClosedIcon } from "@radix-ui/react-icons"
 import { useAuthForm } from "@/hooks/use-auth-form"
 import { useState } from "react"
+import { getAuthMode } from "@/lib/auth-mode"
+import { signIn } from "next-auth/react"
+import { useRouter, useSearchParams } from "next/navigation"
 
 /**
  * Enhanced Login Form Component
@@ -39,8 +42,12 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
     title = "Sign in to your account",
     className 
   }, ref) => {
+    const authMode = getAuthMode()
+    const router = useRouter()
+    const searchParams = useSearchParams()
     const formId = useId()
     const [showPassword, setShowPassword] = useState(false)
+    const [isOAuthLoading, setIsOAuthLoading] = useState(false)
     
     const {
       form,
@@ -64,6 +71,31 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
 
     const togglePasswordVisibility = () => {
       setShowPassword(prev => !prev)
+    }
+
+    // Handle OAuth sign-in
+    const handleOAuthSignIn = async () => {
+      setIsOAuthLoading(true)
+      const callbackUrl = searchParams.get("callbackUrl") || "/"
+      
+      try {
+        const result = await signIn('spearfish-oauth', {
+          callbackUrl: callbackUrl,
+          redirect: false,
+        })
+        
+        if (result?.url) {
+          // OAuth provider will redirect to authorization URL
+          window.location.href = result.url
+        } else if (result?.error) {
+          onError?.(result.error)
+          setIsOAuthLoading(false)
+        }
+      } catch (error) {
+        console.error('OAuth sign-in error:', error)
+        onError?.('An error occurred during sign-in')
+        setIsOAuthLoading(false)
+      }
     }
 
     // Simple autofill detection - just sync form values with DOM when needed
@@ -92,6 +124,40 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
       }
     }, [form])
 
+    // Render OAuth sign-in for OAuth mode
+    if (authMode === 'oauth') {
+      return (
+        <Flex direction="column" gap="4">
+          <Text 
+            id={`${formId}-title`} 
+            className="sr-only"
+            size="4" 
+            weight="medium"
+          >
+            {title}
+          </Text>
+
+          <Button 
+            size="3" 
+            disabled={isOAuthLoading}
+            loading={isOAuthLoading}
+            onClick={handleOAuthSignIn}
+            style={{ 
+              width: "100%", 
+              marginTop: "var(--space-2)"
+            }}
+          >
+            {isOAuthLoading ? "Redirecting..." : "Sign in with Spearfish"}
+          </Button>
+
+          <Text size="1" color="gray" align="center">
+            You will be redirected to the Spearfish authentication server
+          </Text>
+        </Flex>
+      )
+    }
+
+    // Render traditional form for credentials/legacy mode
     return (
       <form 
         ref={ref}
