@@ -1,9 +1,9 @@
 import NextAuth from "next-auth"
-import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import { env } from "@/lib/env"
 import { getAuthMode } from "@/lib/auth-mode"
-import type { SpearfishAuthResponse, SpearfishCredentials, SpearfishUser } from "@/types/auth"
+import { refreshAccessToken } from "@/lib/auth-utils"
+import type { SpearfishUser } from "@/types/auth"
 
 /**
  * Auth.js Configuration for Spearfish Platform
@@ -14,129 +14,72 @@ import type { SpearfishAuthResponse, SpearfishCredentials, SpearfishUser } from 
 export const authConfig = {
   debug: env.NODE_ENV === "development",
   trustHost: true,
+  logger: {
+    error(code, metadata) {
+      console.error(`[AUTH_ERROR] ${code}:`, metadata)
+    },
+    warn(code) {
+      console.warn(`[AUTH_WARN] ${code}`)
+    },
+    debug(code, metadata) {
+      if (env.NODE_ENV === "development") {
+        console.debug(`[AUTH_DEBUG] ${code}:`, metadata)
+      }
+    },
+  },
   providers: [
     /**
-     * Custom Spearfish Credentials Provider
-     * Authenticates against the Spearfish platform API
+     * Spearfish OIDC Provider (OpenID Connect)
+     * Uses the proper OIDC endpoints from the Identity API with OpenIddict
+     * This is the primary authentication method for the platform
      */
-    Credentials({
-      id: "spearfish",
-      name: "Spearfish",
-      credentials: {
-        email: { 
-          label: "Email", 
-          type: "email",
-          placeholder: "your.email@company.com"
-        },
-        password: { 
-          label: "Password", 
-          type: "password" 
-        }
-      },
-      async authorize(credentials): Promise<SpearfishUser | null> {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
-
-        try {
-          const authPayload: SpearfishCredentials = {
-            email: credentials.email as string,
-            password: credentials.password as string,
-          }
-
-          // Authenticate through our local API route (matches portal-spearfish pattern)
-          const apiUrl = `${env.NEXT_PUBLIC_APP_URL}/api/auth/login?useCookies=true`
-          console.log('🔥 Attempting authentication to:', apiUrl)
-          console.log('🔥 Auth payload:', { email: authPayload.email, hasPassword: !!authPayload.password })
-          
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(authPayload),
-          })
-
-          console.log('🔥 API Response status:', response.status, response.statusText)
-          
-          if (!response.ok) {
-            // Try to get more detailed error information
-            const errorText = await response.text()
-            console.error('🔥 Spearfish authentication failed:', {
-              status: response.status,
-              statusText: response.statusText,
-              url: apiUrl,
-              errorBody: errorText
-            })
-            return null
-          }
-
-          const authResult: SpearfishAuthResponse = await response.json()
-
-          if (!authResult.success || !authResult.user) {
-            console.error('Spearfish authentication failed:', authResult.error || authResult.message)
-            return null
-          }
-
-          // Map Spearfish user to Auth.js user format
-          const user: SpearfishUser = {
-            id: authResult.user.id,
-            email: authResult.user.email,
-            name: authResult.user.fullName,
-            firstName: authResult.user.firstName,
-            lastName: authResult.user.lastName,
-            userName: authResult.user.userName,
-            primaryTenantId: authResult.user.primaryTenantId,
-            tenantMemberships: authResult.user.tenantMemberships || [authResult.user.primaryTenantId],
-            roles: authResult.user.roles || [],
-            authType: authResult.user.authType || 'credentials',
-          }
-
-          return user
-        } catch (error) {
-          console.error('Error during Spearfish authentication:', error)
-          return null
-        }
-      }
-    }),
-
-    /**
-     * Spearfish OAuth Provider (Modern OAuth 2.0)
-     * Uses the proper OAuth 2.0 endpoints from the Identity API
-     */
-    ...(getAuthMode() === 'oauth' ? [{
-      id: "spearfish-oauth",
-      name: "Spearfish OAuth",
-      type: "oauth" as const,
-      clientId: "platform-web-dev", // Pre-configured client in Identity API
+    {
+      id: "spearfish-oidc",
+      name: "Spearfish Identity",
+      type: "oidc" as const,
+      clientId: "platform-web", // Pre-configured client in Identity API
       clientSecret: undefined, // Public client (PKCE)
-      issuer: env.NEXT_PUBLIC_API_URL.replace(/\/$/, ''), // Remove trailing slash
-      wellKnown: `${env.NEXT_PUBLIC_API_URL}.well-known/openid-configuration`,
+      issuer: env.NEXT_PUBLIC_API_URL.replace(/\/$/, ''), // Use configured protocol
       authorization: {
         params: {
-          scope: "openid profile email tenant:read user:read",
+          scope: "openid profile email offline_access tenant:read tenant:write user:read user:write",
           response_type: "code",
           code_challenge_method: "S256", // PKCE
+          prompt: "select_account", // Force account selection for better UX
         }
       },
+      wellKnown: `${env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')}/.well-known/openid-configuration`,
       checks: ["pkce", "state"],
+      client: {
+        token_endpoint_auth_method: "none", // Public client with PKCE
+      },
+      httpOptions: {
+        timeout: 10000, // 10 second timeout
+      },
       profile(profile: any) {
-        // Map OAuth profile to Spearfish user format
+        // Validate required OIDC claims
+        if (!profile.sub) {
+          throw new Error("OIDC profile missing required 'sub' claim")
+        }
+        if (!profile.email) {
+          throw new Error("OIDC profile missing required 'email' claim")
+        }
+        
+        // Map OIDC profile to Spearfish user format
         return {
           id: profile.sub,
           email: profile.email,
-          name: profile.name,
+          name: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
           firstName: profile.given_name,
           lastName: profile.family_name,
-          userName: profile.preferred_username,
-          primaryTenantId: profile.tenant_id || profile.primary_tenant_id,
-          tenantMemberships: profile.tenant_memberships || [profile.tenant_id || profile.primary_tenant_id],
+          userName: profile.preferred_username || profile.email,
+          primaryTenantId: profile.tenant_id || profile.primary_tenant_id || 0,
+          tenantMemberships: profile.tenant_memberships || [profile.tenant_id || profile.primary_tenant_id || 0],
           roles: profile.roles || [],
-          authType: 'oauth',
+          authType: 'oidc',
         }
       }
-    }] : []),
+    },
 
     /**
      * Google OAuth Provider (Optional)
@@ -172,39 +115,40 @@ export const authConfig = {
      * JWT Callback - Called whenever a JWT is created, updated, or accessed
      * Adds custom Spearfish user data to the JWT token
      */
-    async jwt({ token, user, account }) {
-      // Initial sign in
-      if (user) {
+    async jwt({ token, user, account, trigger }) {
+      // Initial sign in - only store essential data to reduce token size
+      if (user && account?.provider === "spearfish-oidc") {
         token.id = user.id
-        token.tenantId = user.primaryTenantId
-        token.roles = user.roles || []
-        token.tenantMemberships = user.tenantMemberships || []
-        token.authType = user.authType
-        token.firstName = user.firstName
-        token.lastName = user.lastName
-        token.userName = user.userName
+        token.tenantId = user.primaryTenantId || 0
+        token.authType = 'oidc'
+        
+        // Store access token info but not the token itself to reduce size
+        if (account.access_token) {
+          token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : Date.now() + 60 * 60 * 1000
+        }
+        if (account.refresh_token) {
+          token.refreshToken = account.refresh_token
+        }
       }
 
-      // Handle Spearfish OAuth
-      if (account?.provider === "spearfish-oauth" && user) {
-        token.id = user.id
-        token.tenantId = user.primaryTenantId
-        token.roles = user.roles || []
-        token.tenantMemberships = user.tenantMemberships || []
-        token.authType = 'oauth'
-        token.firstName = user.firstName
-        token.lastName = user.lastName
-        token.userName = user.userName
-      }
-
-      // Handle Google OAuth
+      // Handle Google OAuth (simplified)
       if (account?.provider === "google" && user) {
-        // TODO: Verify Google user with Spearfish API and get tenant/role information
-        // For now, set defaults
         token.tenantId = 0
-        token.roles = []
-        token.tenantMemberships = []
         token.authType = 'google'
+      }
+
+      // Handle token refresh for OIDC
+      if (trigger === "update" && token.refreshToken && Date.now() > (token.accessTokenExpires as number)) {
+        try {
+          const refreshedTokens = await refreshAccessToken(token.refreshToken as string)
+          token.accessTokenExpires = Date.now() + refreshedTokens.expires_in * 1000
+          if (refreshedTokens.refresh_token) {
+            token.refreshToken = refreshedTokens.refresh_token
+          }
+        } catch (error) {
+          console.error("Token refresh failed:", error)
+          return { ...token, error: "RefreshAccessTokenError" }
+        }
       }
 
       return token
@@ -217,19 +161,12 @@ export const authConfig = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
-        session.user.firstName = token.firstName as string
-        session.user.lastName = token.lastName as string
-        session.user.userName = token.userName as string
-        session.user.primaryTenantId = token.tenantId as number
-        session.user.tenantMemberships = token.tenantMemberships as number[]
-        session.user.roles = token.roles as string[]
-        session.user.authType = token.authType as string
+        session.user.primaryTenantId = token.tenantId as number || 0
+        session.user.authType = token.authType as string || 'unknown'
         
-        // Add convenience properties to session
-        session.tenantId = token.tenantId as number
-        session.roles = token.roles as string[]
-        session.tenantMemberships = token.tenantMemberships as number[]
-        session.authType = token.authType as string
+        // Set simplified session data
+        session.tenantId = token.tenantId as number || 0
+        session.authType = token.authType as string || 'unknown'
       }
 
       return session
@@ -239,6 +176,43 @@ export const authConfig = {
   session: {
     strategy: "jwt" as const,
     maxAge: 12 * 60 * 60, // 12 hours (matching Spearfish sliding expiration)
+    updateAge: 60 * 60, // Update session every hour
+  },
+  
+  jwt: {
+    // Reduce JWT token size to prevent cookie size issues
+    maxAge: 12 * 60 * 60, // 12 hours
+  },
+
+  cookies: {
+    sessionToken: {
+      name: "spearfish.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: env.NODE_ENV === "production",
+        domain: env.NODE_ENV === "production" ? ".spearfish.io" : undefined,
+      },
+    },
+    callbackUrl: {
+      name: "spearfish.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: "spearfish.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: env.NODE_ENV === "production",
+      },
+    },
   },
 
   pages: {
@@ -246,13 +220,64 @@ export const authConfig = {
     error: '/auth/error',
     signOut: '/auth/signout',
   },
+  
+  // Theme configuration for Auth.js default pages (if needed)
+  theme: {
+    colorScheme: "light",
+    brandColor: "#007bff",
+    logo: "/spearfish-logo.png",
+  },
 
   events: {
-    async signIn({ user, account, profile }) {
-      console.log(`User signed in: ${user.email} via ${account?.provider || 'credentials'}`)
+    async signIn({ user, account, profile, isNewUser }) {
+      try {
+        console.log(`User signed in: ${user.email} via ${account?.provider || 'credentials'}${isNewUser ? ' (new user)' : ''}`)
+        
+        // Log security event for audit trail
+        if (account?.provider === 'spearfish-oidc') {
+          // These properties are set in the profile() function and may not be available immediately
+          const tenantId = (user as any).primaryTenantId || 'unknown'
+          const roles = (user as any).roles?.join(',') || 'none'
+          console.log(`OIDC sign-in: tenant=${tenantId}, roles=[${roles}]`)
+        }
+      } catch (error) {
+        console.error('SignIn event error:', error)
+      }
     },
     async signOut({ session, token }) {
-      console.log(`User signed out: ${session?.user?.email || token?.email}`)
+      try {
+        console.log(`User signed out: ${session?.user?.email || token?.email}`)
+        
+        // Revoke tokens at the OIDC provider for complete logout
+        if (token?.refreshToken && token?.authType === 'oidc') {
+          try {
+            await fetch(`${env.NEXT_PUBLIC_API_URL}connect/revoke`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({
+                token: token.refreshToken as string,
+                client_id: 'platform-web',
+              }),
+            })
+          } catch (error) {
+            console.error('Token revocation failed:', error)
+          }
+        }
+      } catch (error) {
+        console.error('SignOut event error:', error)
+      }
+    },
+    async session({ session, token }) {
+      try {
+        // Check for token refresh errors
+        if (token?.error === 'RefreshAccessTokenError') {
+          console.warn('Session contains refresh error, user may need to re-authenticate')
+        }
+      } catch (error) {
+        console.error('Session event error:', error)
+      }
     },
   },
 }

@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { env } from "@/lib/env"
 import { SpearfishRoles, type SpearfishRoleType, type RoleHelper } from "@/types/auth"
 
 /**
@@ -153,4 +154,101 @@ export async function getPrimaryTenantId(): Promise<number | null> {
 export async function getTenantMemberships(): Promise<number[]> {
   const session = await getCurrentSession()
   return session?.user?.tenantMemberships || []
+}
+
+// OIDC-specific utilities for token management and validation
+
+/**
+ * Refresh an access token using the refresh token
+ */
+export async function refreshAccessToken(refreshToken: string): Promise<{
+  access_token: string
+  expires_in: number
+  refresh_token?: string
+}> {
+  const response = await fetch(`${env.NEXT_PUBLIC_API_URL}connect/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: 'platform-web',
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Token refresh failed: ${response.status} ${errorText}`)
+  }
+
+  return await response.json()
+}
+
+/**
+ * Validate OIDC configuration endpoints
+ */
+export async function validateOIDCEndpoints(): Promise<{
+  isValid: boolean
+  errors: string[]
+}> {
+  const errors: string[] = []
+  
+  try {
+    // Check discovery endpoint
+    const discoveryResponse = await fetch(`${env.NEXT_PUBLIC_API_URL}.well-known/openid-configuration`)
+    if (!discoveryResponse.ok) {
+      errors.push(`Discovery endpoint failed: ${discoveryResponse.status}`)
+    } else {
+      const discovery = await discoveryResponse.json()
+      
+      // Validate required endpoints exist
+      const requiredEndpoints = ['authorization_endpoint', 'token_endpoint', 'userinfo_endpoint']
+      for (const endpoint of requiredEndpoints) {
+        if (!discovery[endpoint]) {
+          errors.push(`Missing ${endpoint} in discovery document`)
+        }
+      }
+      
+      // Validate PKCE support
+      if (!discovery.code_challenge_methods_supported?.includes('S256')) {
+        errors.push('PKCE S256 not supported')
+      }
+    }
+  } catch (error) {
+    errors.push(`Discovery endpoint error: ${error}`)
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  }
+}
+
+/**
+ * Get user display name from session
+ */
+export function getUserDisplayName(session: any): string {
+  const user = session?.user
+  if (!user) return 'Unknown User'
+  
+  if (user.name) return user.name
+  if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`
+  if (user.firstName) return user.firstName
+  if (user.email) return user.email
+  return 'User'
+}
+
+/**
+ * Log authentication event for audit trail
+ */
+export function logAuthEvent(event: string, details: Record<string, any>): void {
+  if (env.NODE_ENV === 'development') {
+    console.log(`[AUTH_EVENT] ${event}:`, details)
+  }
+  
+  // In production, this would send to audit logging service
+  // Example: auditLogger.log({ event, ...details })
 }

@@ -79,20 +79,13 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
       const callbackUrl = searchParams.get("callbackUrl") || "/"
       
       try {
-        const result = await signIn('spearfish-oauth', {
+        // Let Auth.js handle the OIDC redirect automatically
+        await signIn('spearfish-oidc', {
           callbackUrl: callbackUrl,
-          redirect: false,
+          // redirect: true is the default for OAuth providers
         })
-        
-        if (result?.url) {
-          // OAuth provider will redirect to authorization URL
-          window.location.href = result.url
-        } else if (result?.error) {
-          onError?.(result.error)
-          setIsOAuthLoading(false)
-        }
       } catch (error) {
-        console.error('OAuth sign-in error:', error)
+        console.error('OIDC sign-in error:', error)
         onError?.('An error occurred during sign-in')
         setIsOAuthLoading(false)
       }
@@ -124,8 +117,9 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
       }
     }, [form])
 
-    // Render OAuth sign-in for OAuth mode
-    if (authMode === 'oauth') {
+    // Always render OIDC sign-in since we've removed credentials provider
+    // Legacy mode will be handled by the Identity API login page
+    if (authMode !== 'mock') {
       return (
         <Flex direction="column" gap="4">
           <Text 
@@ -157,7 +151,7 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
       )
     }
 
-    // Render traditional form for credentials/legacy mode
+    // Render mock form only for testing
     return (
       <form 
         ref={ref}
