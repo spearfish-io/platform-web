@@ -1,32 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { 
-  Container, 
-  Heading, 
-  Text, 
-  Grid, 
-  Flex, 
-  Box, 
+import {
+  Container,
+  Heading,
+  Text,
+  Grid,
+  Flex,
+  Box,
   Card,
   Separator,
   Badge,
-  Button
+  Button,
 } from "@radix-ui/themes";
 import { AppShell } from "@/components/layout/app-shell";
 import { ComponentShowcase, CodeExample } from "@/components/test-pages";
-import { Button as UIButton } from "@/components/ui/button";
-import { Card as UICard } from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/metric-card";
-import { 
-  Play,
-  Plus,
-  Download,
-  User,
-  BarChart3,
-  Heart,
-  Star
-} from "lucide-react";
+import { Plus, Download, User, BarChart3, Heart, Star } from "lucide-react";
 
 export default function ComponentsPage() {
   const sampleMetric = {
@@ -83,9 +73,10 @@ const metric = {
             Component Library
           </Heading>
           <Text size="4" color="gray" mb="4">
-            Interactive showcase of all Platform Web components built with Pure Radix UI Themes
+            Interactive showcase of all Platform Web components built with Pure
+            Radix UI Themes
           </Text>
-          
+
           <Flex align="center" gap="2" wrap="wrap">
             <Badge variant="soft" color="blue" size="2">
               Interactive Examples
@@ -102,33 +93,12 @@ const metric = {
           </Flex>
         </Box>
 
-        {/* Ladle Integration */}
-        <Card size="3" mb="8" style={{ background: "var(--blue-2)", border: "1px solid var(--blue-6)" }}>
-          <Flex align="center" gap="4">
-            <Box style={{ color: "var(--blue-9)" }}>
-              <Play style={{ width: "24px", height: "24px" }} />
-            </Box>
-            <Box style={{ flex: 1 }}>
-              <Heading size="4" color="blue" mb="2">
-                Ladle Component Development
-              </Heading>
-              <Text size="2" color="blue" mb="3">
-                Access the full interactive component development environment with live editing, 
-                responsive testing, and comprehensive component documentation.
-              </Text>
-              <Button variant="solid" color="blue" asChild>
-                <a href="http://localhost:61000" target="_blank" rel="noopener noreferrer">
-                  Open Ladle Environment
-                </a>
-              </Button>
-            </Box>
-          </Flex>
-        </Card>
-
         {/* Basic Components */}
         <Box mb="8">
-          <Heading size="6" mb="4">Basic Components</Heading>
-          
+          <Heading size="6" mb="4">
+            Basic Components
+          </Heading>
+
           <Grid columns={{ initial: "1" }} gap="6">
             {/* Button Component */}
             <ComponentShowcase
@@ -146,7 +116,7 @@ const metric = {
                       <Button variant="ghost">Ghost</Button>
                     </Flex>
                   ),
-                  props: { variant: ["solid", "soft", "outline", "ghost"] }
+                  props: { variant: ["solid", "soft", "outline", "ghost"] },
                 },
                 {
                   name: "Colors",
@@ -158,7 +128,7 @@ const metric = {
                       <Button color="orange">Orange</Button>
                     </Flex>
                   ),
-                  props: { color: ["blue", "green", "red", "orange"] }
+                  props: { color: ["blue", "green", "red", "orange"] },
                 },
                 {
                   name: "With Icons",
@@ -177,7 +147,7 @@ const metric = {
                         Like
                       </Button>
                     </Flex>
-                  )
+                  ),
                 },
                 {
                   name: "Sizes",
@@ -189,8 +159,8 @@ const metric = {
                       <Button size="4">Extra Large</Button>
                     </Flex>
                   ),
-                  props: { size: ["1", "2", "3", "4"] }
-                }
+                  props: { size: ["1", "2", "3", "4"] },
+                },
               ]}
             >
               <Button variant="solid">Default Button</Button>
@@ -205,7 +175,11 @@ const metric = {
                 {
                   name: "Card Sizes",
                   component: (
-                    <Grid columns={{ initial: "1", sm: "3" }} gap="3" style={{ width: "100%" }}>
+                    <Grid
+                      columns={{ initial: "1", sm: "3" }}
+                      gap="3"
+                      style={{ width: "100%" }}
+                    >
                       <Card size="1">
                         <Text size="2">Size 1 - Compact</Text>
                       </Card>
@@ -217,7 +191,7 @@ const metric = {
                       </Card>
                     </Grid>
                   ),
-                  props: { size: ["1", "2", "3"] }
+                  props: { size: ["1", "2", "3"] },
                 },
                 {
                   name: "Card Content",
@@ -229,21 +203,25 @@ const metric = {
                           <Heading size="4">Featured Content</Heading>
                         </Flex>
                         <Text size="2" color="gray">
-                          This card demonstrates proper content structure with icons, 
-                          headings, and descriptive text.
+                          This card demonstrates proper content structure with
+                          icons, headings, and descriptive text.
                         </Text>
                         <Button variant="soft" size="2">
                           Learn More
                         </Button>
                       </Flex>
                     </Card>
-                  )
-                }
+                  ),
+                },
               ]}
             >
               <Card size="2" p="4" style={{ minWidth: "200px" }}>
-                <Heading size="3" mb="2">Sample Card</Heading>
-                <Text size="2" color="gray">Card content example</Text>
+                <Heading size="3" mb="2">
+                  Sample Card
+                </Heading>
+                <Text size="2" color="gray">
+                  Card content example
+                </Text>
               </Card>
             </ComponentShowcase>
           </Grid>
@@ -253,8 +231,10 @@ const metric = {
 
         {/* Dashboard Components */}
         <Box mb="8">
-          <Heading size="6" mb="4">Dashboard Components</Heading>
-          
+          <Heading size="6" mb="4">
+            Dashboard Components
+          </Heading>
+
           <Grid columns={{ initial: "1" }} gap="6">
             {/* MetricCard Component */}
             <ComponentShowcase
@@ -265,8 +245,12 @@ const metric = {
                 {
                   name: "Different Metrics",
                   component: (
-                    <Grid columns={{ initial: "1", sm: "2", lg: "3" }} gap="4" style={{ width: "100%" }}>
-                      <MetricCard 
+                    <Grid
+                      columns={{ initial: "1", sm: "2", lg: "3" }}
+                      gap="4"
+                      style={{ width: "100%" }}
+                    >
+                      <MetricCard
                         metric={{
                           id: "1",
                           title: "Total Users",
@@ -275,7 +259,7 @@ const metric = {
                           icon: User,
                         }}
                       />
-                      <MetricCard 
+                      <MetricCard
                         metric={{
                           id: "2",
                           title: "Revenue",
@@ -284,7 +268,7 @@ const metric = {
                           icon: BarChart3,
                         }}
                       />
-                      <MetricCard 
+                      <MetricCard
                         metric={{
                           id: "3",
                           title: "Conversion Rate",
@@ -294,13 +278,13 @@ const metric = {
                         }}
                       />
                     </Grid>
-                  )
+                  ),
                 },
                 {
                   name: "Without Trend",
                   component: (
                     <Box style={{ maxWidth: "200px" }}>
-                      <MetricCard 
+                      <MetricCard
                         metric={{
                           id: "4",
                           title: "Active Sessions",
@@ -309,8 +293,8 @@ const metric = {
                         }}
                       />
                     </Box>
-                  )
-                }
+                  ),
+                },
               ]}
             >
               <Box style={{ maxWidth: "200px" }}>
@@ -324,28 +308,54 @@ const metric = {
 
         {/* Component Guidelines */}
         <Box mb="8">
-          <Heading size="6" mb="4">Component Development Guidelines</Heading>
-          
+          <Heading size="6" mb="4">
+            Component Development Guidelines
+          </Heading>
+
           <Grid columns={{ initial: "1", lg: "2" }} gap="4" mb="6">
             <Card size="3">
-              <Heading size="4" mb="3">Pure Radix UI Approach</Heading>
+              <Heading size="4" mb="3">
+                Pure Radix UI Approach
+              </Heading>
               <Flex direction="column" gap="2">
-                <Text size="2" color="gray">• Use ONLY Radix UI Themes components</Text>
-                <Text size="2" color="gray">• Style through component props (variant, color, size)</Text>
-                <Text size="2" color="gray">• Leverage CSS variables for custom values</Text>
-                <Text size="2" color="gray">• No custom CSS classes for visual styling</Text>
-                <Text size="2" color="gray">• Maintain consistent spacing with space props</Text>
+                <Text size="2" color="gray">
+                  • Use ONLY Radix UI Themes components
+                </Text>
+                <Text size="2" color="gray">
+                  • Style through component props (variant, color, size)
+                </Text>
+                <Text size="2" color="gray">
+                  • Leverage CSS variables for custom values
+                </Text>
+                <Text size="2" color="gray">
+                  • No custom CSS classes for visual styling
+                </Text>
+                <Text size="2" color="gray">
+                  • Maintain consistent spacing with space props
+                </Text>
               </Flex>
             </Card>
 
             <Card size="3">
-              <Heading size="4" mb="3">TypeScript Integration</Heading>
+              <Heading size="4" mb="3">
+                TypeScript Integration
+              </Heading>
               <Flex direction="column" gap="2">
-                <Text size="2" color="gray">• Define comprehensive prop interfaces</Text>
-                <Text size="2" color="gray">• Use React.forwardRef for ref forwarding</Text>
-                <Text size="2" color="gray">• Export component types for consumers</Text>
-                <Text size="2" color="gray">• Include proper displayName for debugging</Text>
-                <Text size="2" color="gray">• Support asChild prop when appropriate</Text>
+                <Text size="2" color="gray">
+                  • Define comprehensive prop interfaces
+                </Text>
+                <Text size="2" color="gray">
+                  • Use React.forwardRef for ref forwarding
+                </Text>
+                <Text size="2" color="gray">
+                  • Export component types for consumers
+                </Text>
+                <Text size="2" color="gray">
+                  • Include proper displayName for debugging
+                </Text>
+                <Text size="2" color="gray">
+                  • Support asChild prop when appropriate
+                </Text>
               </Flex>
             </Card>
           </Grid>
@@ -387,27 +397,6 @@ export const MyComponent = React.forwardRef<
 
 MyComponent.displayName = "MyComponent";`}
           />
-        </Box>
-
-        {/* Quick Actions */}
-        <Box>
-          <Heading size="5" mb="4">Development Tools</Heading>
-          <Flex gap="3" wrap="wrap">
-            <Button variant="solid" asChild>
-              <a href="http://localhost:61000" target="_blank" rel="noopener noreferrer">
-                Open Ladle
-              </a>
-            </Button>
-            <Button variant="soft" asChild>
-              <a href="/design-system">Design System</a>
-            </Button>
-            <Button variant="soft" asChild>
-              <a href="/patterns">Development Patterns</a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href="/accessibility">Accessibility Testing</a>
-            </Button>
-          </Flex>
         </Box>
       </Container>
     </AppShell>
