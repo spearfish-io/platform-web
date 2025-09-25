@@ -5,6 +5,7 @@ import { AuthSessionProvider } from "@/components/auth/session-provider";
 import { auth } from "@/lib/auth";
 import { MSWProvider } from "@/components/msw-provider";
 import "./globals.css";
+import ClientProviders from "./ClientProviders";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +19,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Platform Web - Modern Next.js Application",
-  description: "A modern Next.js prototype with Radix UI Themes demonstrating latest web development best practices",
+  description:
+    "A modern Next.js prototype with Radix UI Themes demonstrating latest web development best practices",
 };
 
 export default async function RootLayout({
@@ -42,7 +44,7 @@ export default async function RootLayout({
               scaling="100%"
               appearance="inherit"
             >
-              {children}
+              <ClientProviders>{children}</ClientProviders>
             </Theme>
           </AuthSessionProvider>
         </MSWProvider>
