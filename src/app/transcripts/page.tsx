@@ -2,7 +2,18 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { useGetTranscriptsList } from "@/hooks/requests/useTranscripts";
-import { Box, Spinner, Table, Heading } from "@radix-ui/themes";
+import { formatDate } from "@/lib/utils";
+import { TranscriptFileStatus } from "@/types/transcripts";
+import {
+  Box,
+  Spinner,
+  Table,
+  Heading,
+  Badge,
+  Button,
+  Text,
+} from "@radix-ui/themes";
+import { RefreshCwIcon } from "lucide-react";
 
 export default function TranscriptListPage() {
   const { transcriptsList, isTranscriptsListPending } = useGetTranscriptsList();
@@ -23,10 +34,28 @@ export default function TranscriptListPage() {
     );
   }
 
+  if (transcriptsList.length === 0) {
+    return (
+      <AppShell>
+        <Box
+          style={{
+            justifyContent: "center",
+            display: "flex",
+            marginTop: 16,
+          }}
+        >
+          <Text>There are no transcripts to display at the moment.</Text>
+        </Box>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <Box style={{ padding: 16 }}>
-        <Heading as="h1">Transcripts</Heading>
+        <Heading as="h1" style={{ marginBottom: 10 }}>
+          Transcripts
+        </Heading>
         <Table.Root variant="surface">
           <Table.Header>
             <Table.Row>
@@ -46,7 +75,6 @@ export default function TranscriptListPage() {
             {transcriptsList.map((transcript) => {
               const {
                 id,
-                fileLocation,
                 fileName,
                 interactionId,
                 crmTicketId,
@@ -63,13 +91,35 @@ export default function TranscriptListPage() {
                   onClick={() => console.log("navigate")}
                 >
                   <Table.Cell>{fileName}</Table.Cell>
-                  <Table.Cell>{fileLocation}</Table.Cell>
+                  <Table.Cell>{id}</Table.Cell>
                   <Table.Cell>{interactionId}</Table.Cell>
                   <Table.Cell>{crmTicketId}</Table.Cell>
-                  <Table.Cell>{crmTags.join(", ")}</Table.Cell>
-                  <Table.Cell>{status}</Table.Cell>
-                  <Table.Cell>{createdAt}</Table.Cell>
-                  <Table.Cell>{interactionDateTimeUtc}</Table.Cell>
+                  <Table.Cell>
+                    {crmTags.map((tag) => {
+                      return (
+                        <Badge key={tag} className="mr-1">
+                          {tag}
+                        </Badge>
+                      );
+                    })}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Badge
+                      color={
+                        status === TranscriptFileStatus.ERROR ? "red" : "green"
+                      }
+                    >
+                      {status}
+                    </Badge>
+                  </Table.Cell>
+                  <Table.Cell>{formatDate(createdAt)}</Table.Cell>
+                  <Table.Cell>{formatDate(interactionDateTimeUtc)}</Table.Cell>
+                  <Table.Cell>
+                    <Button variant="outline">
+                      <RefreshCwIcon className="h-3 w-3" />
+                      Reprocess
+                    </Button>
+                  </Table.Cell>
                 </Table.Row>
               );
             })}
