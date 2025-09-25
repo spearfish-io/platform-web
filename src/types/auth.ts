@@ -22,6 +22,7 @@ export interface SpearfishUser {
 export interface SpearfishSession {
   user: SpearfishUser & DefaultSession["user"]
   tenantId: number
+  tenantName?: string
   roles: string[]
   tenantMemberships: number[]
   authType?: string
@@ -30,6 +31,7 @@ export interface SpearfishSession {
 export interface SpearfishJWT extends DefaultJWT {
   id: string
   tenantId: number
+  tenantName?: string
   roles: string[]
   tenantMemberships: number[]
   authType?: string
