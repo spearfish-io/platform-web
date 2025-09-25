@@ -8,6 +8,7 @@ import { useState } from "react"
 import { getAuthMode } from "@/lib/auth-mode"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { LegacySignInForm } from "./legacy-signin-form"
 
 /**
  * Enhanced Login Form Component
@@ -117,9 +118,10 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
       }
     }, [form])
 
-    // Always render OIDC sign-in since we've removed credentials provider
-    // Legacy mode will be handled by the Identity API login page
-    if (authMode !== 'mock') {
+    // Handle different authentication modes
+    if (authMode === 'legacy') {
+      return <LegacySignInForm onSuccess={onSuccess} onError={onError} />
+    } else if (authMode !== 'mock') {
       return (
         <Flex direction="column" gap="4">
           <Text 

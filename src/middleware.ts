@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from "@/lib/auth"
 import { getTestPagesConfig, isTestPage } from "@/lib/test-pages-config"
+import { getAuthMode } from "@/lib/auth-mode"
 
 // Security headers for all responses
 function addSecurityHeaders(response: NextResponse) {
@@ -32,6 +33,23 @@ function addSecurityHeaders(response: NextResponse) {
   return response
 }
 
+// Check for legacy authentication cookies
+function checkLegacyAuth(request: NextRequest): boolean {
+  // Check for ASP.NET Core Identity cookies that indicate authentication
+  const cookies = request.cookies
+  
+  // Look for Spearfish Identity cookie names (based on actual cookie names)
+  const identityCookies = [
+    '.Spearfish.Identity', // Main Spearfish identity cookie
+    '.AspNetCore.Identity.Application',
+    '.AspNetCore.Cookies',
+    'Identity.Application',
+    'MultipleSchemes' // Based on the AuthController code
+  ]
+  
+  return identityCookies.some(cookieName => cookies.has(cookieName))
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const testPageCheck = isTestPage(pathname)
@@ -50,7 +68,20 @@ export default auth((req) => {
   }
   
   // Regular auth flow for other pages
-  const isAuthenticated = !!req.auth?.user
+  const authMode = getAuthMode()
+  let isAuthenticated = false
+  
+  // Check authentication based on auth mode
+  if (authMode === 'legacy') {
+    isAuthenticated = checkLegacyAuth(req)
+    console.log(`🔧 Legacy auth check for ${pathname}:`, {
+      isAuthenticated,
+      cookieNames: req.cookies.getAll().map(c => c.name)
+    })
+  } else {
+    isAuthenticated = !!req.auth?.user
+  }
+  
   const isAuthPage = pathname.startsWith('/auth')
   const isApiRoute = pathname.startsWith('/api')
   
@@ -60,26 +91,28 @@ export default auth((req) => {
     return addSecurityHeaders(response)
   }
   
-  // Check for token refresh errors
-  if (req.auth?.error === 'RefreshAccessTokenError') {
+  // Check for token refresh errors (OIDC mode only)
+  if (authMode !== 'legacy' && req.auth?.error === 'RefreshAccessTokenError') {
     const response = NextResponse.redirect(new URL('/auth/signin?error=TokenExpired', req.url))
     return addSecurityHeaders(response)
   }
   
   // Redirect unauthenticated users to sign in
   if (!isAuthenticated && !isAuthPage) {
+    console.log(`🔄 Redirecting unauthenticated user from ${pathname} to /auth/signin`)
     const response = NextResponse.redirect(new URL('/auth/signin', req.url))
     return addSecurityHeaders(response)
   }
   
   // Redirect authenticated users away from auth pages
   if (isAuthenticated && isAuthPage && pathname !== '/auth/signout') {
-    const response = NextResponse.redirect(new URL('/', req.url))
+    console.log(`🔄 Redirecting authenticated user from ${pathname} to /dashboard`)
+    const response = NextResponse.redirect(new URL('/dashboard', req.url))
     return addSecurityHeaders(response)
   }
   
   // Add tenant context to headers for OIDC flows
-  if (isAuthenticated && req.auth?.user) {
+  if (isAuthenticated && authMode !== 'legacy' && req.auth?.user) {
     const response = NextResponse.next()
     response.headers.set('x-tenant-id', String(req.auth.user.primaryTenantId || 0))
     response.headers.set('x-user-id', req.auth.user.id || '')

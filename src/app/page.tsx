@@ -10,7 +10,9 @@ import {
 import { AppShell } from "@/components/layout/app-shell";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { ChartCard } from "@/components/dashboard/chart-card";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/auth-utils";
+import { getAuthMode } from "@/lib/auth-mode";
+import { cookies } from "next/headers";
 import type { DashboardMetric } from "@/types";
 
 const mockMetrics: DashboardMetric[] = [
@@ -46,14 +48,35 @@ const mockMetrics: DashboardMetric[] = [
 
 export default async function DashboardPage() {
   // Check authentication - redirect to login if not authenticated
-  const session = await auth();
+  const authMode = getAuthMode();
+  let session = null;
+  
+  if (authMode === 'legacy') {
+    // For legacy mode, check for authentication cookies directly
+    const cookieStore = cookies();
+    const hasAuthCookie = cookieStore.has('.Spearfish.Identity');
+    
+    if (hasAuthCookie) {
+      session = {
+        user: {
+          id: 'legacy-user',
+          email: 'legacy@spearfish.io', 
+          name: 'Legacy User',
+          authType: 'legacy'
+        }
+      };
+    }
+  } else {
+    // For OAuth/OIDC modes, use NextAuth
+    session = await getCurrentSession();
+  }
   
   if (!session?.user) {
     console.log('🔥 No session found, redirecting to login');
     redirect('/auth/signin');
   }
   
-  console.log('🔥 User authenticated:', session.user.email);
+  console.log('🔥 User authenticated:', session.user.email, 'Auth Type:', session.user.authType || 'unknown');
   
   return (
     <AppShell>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isUsingMockAuth, isUsingLegacyAuth, getAuthMode } from '@/lib/auth-mode'
+import { getAuthMode } from '@/lib/auth-mode'
 
 /**
  * Login API Route
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 /**
  * Handle mock authentication (server-side mock responses)
  */
-async function handleMockAuthentication(credentials: any) {
+async function handleMockAuthentication(credentials: { email: string; password: string }) {
   const { email, password } = credentials
   
   // Mock user database
@@ -119,7 +119,7 @@ async function handleMockAuthentication(credentials: any) {
   }
   
   // Return user without password
-  const { password: _, ...safeUser } = user
+  const { password: _pwd, ...safeUser } = user
   console.log('🔥 Mock auth: Success for', email)
   
   return NextResponse.json({
@@ -132,8 +132,9 @@ async function handleMockAuthentication(credentials: any) {
 /**
  * Handle OAuth authentication (proxy to platform-api)
  */
-async function handleOAuthAuthentication(credentials: any) {
-  const platformApiUrl = `${process.env.NEXT_PUBLIC_API_URL}api/auth/login?useCookies=true&useSessionCookies=true`
+async function handleOAuthAuthentication(credentials: { email: string; password: string }) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+  const platformApiUrl = `${baseUrl}/api/auth/login?useCookies=true&useSessionCookies=true`
   
   console.log('🔥 Proxying OAuth login request to:', platformApiUrl)
   console.log('🔥 Credentials:', { email: credentials.email, hasPassword: !!credentials.password })
@@ -159,13 +160,13 @@ async function handleOAuthAuthentication(credentials: any) {
   }
   
   // Get response data - handle empty response from cookie-based auth
-  let result: any = {}
+  let result: Record<string, unknown> = {}
   const responseText = await response.text()
   
   if (responseText && responseText.trim()) {
     try {
       result = JSON.parse(responseText)
-    } catch (parseError) {
+    } catch {
       console.log('🔥 Platform-api returned non-JSON response (likely empty - normal for cookie auth)')
     }
   } else {
@@ -189,77 +190,90 @@ async function handleOAuthAuthentication(credentials: any) {
 /**
  * Handle legacy authentication (cookie-based portal-spearfish style)
  */
-async function handleLegacyAuthentication(credentials: any, request: NextRequest) {
-  const legacyApiUrl = `${process.env.NEXT_PUBLIC_API_URL}api/auth/login?useCookies=true`
+async function handleLegacyAuthentication(credentials: { email: string; password: string }, request: NextRequest) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+  const legacyApiUrl = `${baseUrl}/api/auth/login?useCookies=true`
   
   console.log('🔥 Proxying legacy login request to:', legacyApiUrl)
   console.log('🔥 Credentials:', { email: credentials.email, hasPassword: !!credentials.password })
   
-  // Forward all cookies from the incoming request
-  const cookieHeader = request.headers.get('cookie') || ''
-  
-  const response = await fetch(legacyApiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Cookie': cookieHeader,
-    },
-    body: JSON.stringify(credentials),
-    // Important: Don't use credentials: 'include' here as we're manually forwarding cookies
-  })
-  
-  console.log('🔥 Legacy API response:', response.status, response.statusText)
-  
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error('🔥 Legacy API login failed:', errorText)
+  try {
+    // Forward all cookies from the incoming request
+    const cookieHeader = request.headers.get('cookie') || ''
+    
+    const response = await fetch(legacyApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cookie': cookieHeader,
+      },
+      body: JSON.stringify(credentials),
+      // Important: Don't use credentials: 'include' here as we're manually forwarding cookies
+      })
+    
+    console.log('🔥 Legacy API response:', response.status, response.statusText)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('🔥 Legacy API login failed:', errorText)
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Authentication failed',
+          message: 'Invalid email or password. Please check your credentials and try again.'
+        },
+        { status: response.status }
+      )
+    }
+    
+    // Get response data - handle empty response from cookie-based auth
+    let result: Record<string, unknown> = {}
+    const responseText = await response.text()
+    
+    if (responseText && responseText.trim()) {
+      try {
+        result = JSON.parse(responseText)
+      } catch {
+        console.log('🔥 Legacy API returned non-JSON response (likely empty - normal for cookie auth)')
+      }
+    } else {
+      console.log('🔥 Legacy API returned empty response (normal for cookie-based auth)')
+    }
+    
+    console.log('🔥 Legacy API login successful')
+    
+    // Create response and forward Set-Cookie headers
+    // For legacy cookie auth, we create a minimal user object from what we can infer
+    const nextResponse = NextResponse.json({
+      success: true,
+      user: result.user || {
+        // Minimal user data - the real data will be in the cookie claims
+        email: credentials.email,
+        authType: 'Password'
+      },
+      message: 'Authentication successful'
+    })
+    
+    // Forward all Set-Cookie headers from the legacy API
+    const setCookieHeaders = response.headers.getSetCookie()
+    if (setCookieHeaders && setCookieHeaders.length > 0) {
+      setCookieHeaders.forEach(cookie => {
+        nextResponse.headers.append('Set-Cookie', cookie)
+      })
+      console.log('🍪 Forwarded cookies:', setCookieHeaders.length)
+    }
+    
+    return nextResponse
+  } catch (error) {
+    console.error('🔥 Legacy API fetch error:', error)
     return NextResponse.json(
       { 
         success: false,
-        error: 'Authentication failed',
-        message: 'Invalid email or password. Please check your credentials and try again.'
+        error: 'Network error',
+        message: 'Unable to connect to authentication server. Please try again.'
       },
-      { status: response.status }
+      { status: 500 }
     )
   }
-  
-  // Get response data - handle empty response from cookie-based auth
-  let result: any = {}
-  const responseText = await response.text()
-  
-  if (responseText && responseText.trim()) {
-    try {
-      result = JSON.parse(responseText)
-    } catch (parseError) {
-      console.log('🔥 Legacy API returned non-JSON response (likely empty - normal for cookie auth)')
-    }
-  } else {
-    console.log('🔥 Legacy API returned empty response (normal for cookie-based auth)')
-  }
-  
-  console.log('🔥 Legacy API login successful')
-  
-  // Create response and forward Set-Cookie headers
-  // For legacy cookie auth, we create a minimal user object from what we can infer
-  const nextResponse = NextResponse.json({
-    success: true,
-    user: result.user || {
-      // Minimal user data - the real data will be in the cookie claims
-      email: credentials.email,
-      authType: 'Password'
-    },
-    message: 'Authentication successful'
-  })
-  
-  // Forward all Set-Cookie headers from the legacy API
-  const setCookieHeaders = response.headers.getSetCookie()
-  if (setCookieHeaders && setCookieHeaders.length > 0) {
-    setCookieHeaders.forEach(cookie => {
-      nextResponse.headers.append('Set-Cookie', cookie)
-    })
-    console.log('🍪 Forwarded cookies:', setCookieHeaders.length)
-  }
-  
-  return nextResponse
 }
