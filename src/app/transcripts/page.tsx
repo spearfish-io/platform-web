@@ -94,7 +94,7 @@ export default function TranscriptListPage() {
                   style={{ cursor: "pointer" }}
                   onClick={() => console.log("navigate")}
                 >
-                  <Table.Cell>{fileName}</Table.Cell>
+                  <Table.Cell>{`${fileName.substring(0, 10)}...`}</Table.Cell>
                   <Table.Cell>{id}</Table.Cell>
                   <Table.Cell>{interactionId}</Table.Cell>
                   <Table.Cell>{crmTicketId}</Table.Cell>
