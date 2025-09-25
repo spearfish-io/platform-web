@@ -76,7 +76,7 @@ export const LoginForm = forwardRef<HTMLFormElement, LoginFormProps>(
     // Handle OAuth sign-in
     const handleOAuthSignIn = async () => {
       setIsOAuthLoading(true)
-      const callbackUrl = searchParams.get("callbackUrl") || "/"
+      const callbackUrl = searchParams.get("callbackUrl") || "/analytics"
       
       try {
         // Let Auth.js handle the OIDC redirect automatically

@@ -16,11 +16,7 @@ export type AuthMode = 'mock' | 'oauth' | 'legacy'
 export function getAuthMode(): AuthMode {
   const mode = process.env.NEXT_PUBLIC_AUTH_MODE?.toLowerCase()
   
-  // Support legacy environment variables for backward compatibility
-  if (process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true') return 'mock'
-  if (process.env.NEXT_PUBLIC_USE_LEGACY_AUTH === 'true') return 'legacy'
-  
-  // Use new single environment variable
+  // Use single environment variable
   if (mode === 'mock' || mode === 'legacy' || mode === 'oauth') {
     return mode as AuthMode
   }
@@ -91,11 +87,11 @@ export function logAuthConfig(): void {
       console.log('      test@example.com / TestPass123!')
     } else if (mode === 'legacy') {
       console.log('   🍪 Using legacy cookie-based authentication')
-      console.log('   💡 Set NEXT_PUBLIC_USE_MOCK_AUTH=true to use mocks')
+      console.log('   💡 Set NEXT_PUBLIC_AUTH_MODE=mock to use mocks')
     } else {
       console.log('   🔗 Using OAuth 2.0 platform-api')
-      console.log('   💡 Set NEXT_PUBLIC_USE_MOCK_AUTH=true to use mocks')
-      console.log('   💡 Set NEXT_PUBLIC_USE_LEGACY_AUTH=true to use legacy auth')
+      console.log('   💡 Set NEXT_PUBLIC_AUTH_MODE=mock to use mocks')
+      console.log('   💡 Set NEXT_PUBLIC_AUTH_MODE=legacy to use legacy auth')
     }
   }
 }

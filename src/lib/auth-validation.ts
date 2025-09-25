@@ -10,10 +10,13 @@ import { z } from "zod"
 /**
  * Login Form Validation Schema
  * 
- * Validates email and password with security-focused rules:
+ * Validates email and password for sign-in:
  * - Email format validation with proper RFC compliance
- * - Password minimum requirements for security
+ * - Password presence check only (no complexity validation on sign-in)
  * - Sanitization to prevent injection attacks
+ * 
+ * SECURITY: Never validate password complexity on sign-in to avoid
+ * leaking password requirements to potential attackers.
  */
 export const loginFormSchema = z.object({
   email: z
@@ -27,12 +30,7 @@ export const loginFormSchema = z.object({
   password: z
     .string()
     .min(1, "Password is required")
-    .min(8, "Password must be at least 8 characters long")
-    .max(128, "Password is too long") // Prevent DoS via large passwords
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      "Password must contain at least one lowercase letter, one uppercase letter, and one number"
-    ),
+    .max(128, "Password is too long"), // Prevent DoS via large passwords
   
   rememberMe: z
     .boolean()
@@ -41,6 +39,33 @@ export const loginFormSchema = z.object({
 })
 
 export type LoginFormData = z.infer<typeof loginFormSchema>
+
+/**
+ * Registration/Password Creation Schema
+ * 
+ * Used for password creation scenarios (registration, password reset)
+ * where we need to enforce password complexity requirements.
+ */
+export const passwordCreationSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email address is required")
+    .email("Please enter a valid email address")
+    .max(254, "Email address is too long")
+    .toLowerCase()
+    .trim(),
+  
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .max(128, "Password is too long")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Password must contain at least one lowercase letter, one uppercase letter, and one number"
+    ),
+})
+
+export type PasswordCreationData = z.infer<typeof passwordCreationSchema>
 
 /**
  * Password Reset Request Schema

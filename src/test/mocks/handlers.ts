@@ -1,9 +1,12 @@
 import { http, HttpResponse } from 'msw'
 
+// Get API URL from environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+
 // Mock API handlers for testing
 export const handlers = [
   // Mock user API endpoints
-  http.get('http://localhost:3001/api/users', () => {
+  http.get(`${API_URL}/api/users`, () => {
     return HttpResponse.json([
       {
         id: '1',
@@ -22,7 +25,7 @@ export const handlers = [
     ])
   }),
 
-  http.get('http://localhost:3001/api/users/:id', ({ params }) => {
+  http.get(`${API_URL}/api/users/:id`, ({ params }) => {
     const { id } = params
     return HttpResponse.json({
       id,
@@ -33,7 +36,7 @@ export const handlers = [
     })
   }),
 
-  http.post('http://localhost:3001/api/users', async ({ request }) => {
+  http.post(`${API_URL}/api/users`, async ({ request }) => {
     const userData = await request.json()
     return HttpResponse.json(
       {
@@ -46,7 +49,7 @@ export const handlers = [
   }),
 
   // Mock analytics API endpoints
-  http.get('http://localhost:3001/api/analytics/overview', () => {
+  http.get(`${API_URL}/api/analytics/overview`, () => {
     return HttpResponse.json({
       totalUsers: 1234,
       activeUsers: 456,
@@ -60,7 +63,7 @@ export const handlers = [
     })
   }),
 
-  http.get('http://localhost:3001/api/analytics/charts/:type', ({ params }) => {
+  http.get(`${API_URL}/api/analytics/charts/:type`, ({ params }) => {
     const { type } = params
     
     if (type === 'users') {
@@ -81,13 +84,13 @@ export const handlers = [
   }),
 
   // Mock Spearfish platform-api authentication endpoints
-  http.post('http://localhost:5000/api/auth/login', async ({ request }) => {
+  http.post(`${API_URL}/api/auth/login`, async ({ request }) => {
     const { email, password } = await request.json() as any
     
     console.log('🔥 MSW intercepted auth request:', { email, hasPassword: !!password })
     
     // Admin test credentials (matches simplified form validation)
-    if (email === 'admin@spearfish.io' && password === 'password123') {
+    if (email === 'admin@spearfish.io' && password === 'Password123!') {
       return HttpResponse.json({
         success: true,
         user: {
@@ -107,7 +110,7 @@ export const handlers = [
     }
     
     // Regular user test credentials
-    if (email === 'user@spearfish.io' && password === 'user123456') {
+    if (email === 'user@spearfish.io' && password === 'UserPass123!') {
       return HttpResponse.json({
         success: true,
         user: {
@@ -127,7 +130,7 @@ export const handlers = [
     }
     
     // Test user with simple credentials
-    if (email === 'test@example.com' && password === 'test12345') {
+    if (email === 'test@example.com' && password === 'TestPass123!') {
       return HttpResponse.json({
         success: true,
         user: {
@@ -159,7 +162,7 @@ export const handlers = [
   }),
 
   // Mock other Spearfish API endpoints
-  http.get('http://localhost:5000/api/auth/session', () => {
+  http.get(`${API_URL}/api/auth/session`, () => {
     return HttpResponse.json({
       user: {
         id: 'user-123-456-789',
@@ -182,7 +185,7 @@ export const handlers = [
     })
   }),
 
-  http.post('http://localhost:5000/api/auth/logout', () => {
+  http.post(`${API_URL}/api/auth/logout`, () => {
     console.log('🔥 MSW intercepted logout request')
     return HttpResponse.json({ 
       success: true, 
@@ -191,13 +194,13 @@ export const handlers = [
   }),
 
   // Platform-web internal API route (this calls the above mock)
-  http.post('http://localhost:3001/api/auth/login', async ({ request }) => {
+  http.post(`${API_URL}/api/auth/login`, async ({ request }) => {
     const credentials = await request.json() as any
     
     console.log('🔥 MSW intercepted platform-web API route:', credentials.email)
     
     // This would normally proxy to platform-api, but we'll handle it directly
-    if (credentials.email === 'admin@spearfish.io' && credentials.password === 'password123') {
+    if (credentials.email === 'admin@spearfish.io' && credentials.password === 'Password123!') {
       return HttpResponse.json({
         success: true,
         user: {
@@ -222,12 +225,12 @@ export const handlers = [
     )
   }),
 
-  http.post('http://localhost:3001/api/auth/logout', () => {
+  http.post(`${API_URL}/api/auth/logout`, () => {
     return HttpResponse.json({ success: true })
   }),
 
   // Mock settings endpoints
-  http.get('http://localhost:3001/api/settings', () => {
+  http.get(`${API_URL}/api/settings`, () => {
     return HttpResponse.json({
       theme: 'light',
       notifications: true,
@@ -236,7 +239,7 @@ export const handlers = [
     })
   }),
 
-  http.put('http://localhost:3001/api/settings', async ({ request }) => {
+  http.put(`${API_URL}/api/settings`, async ({ request }) => {
     const settings = await request.json()
     return HttpResponse.json({
       ...settings,
@@ -245,21 +248,21 @@ export const handlers = [
   }),
 
   // Error simulation handlers
-  http.get('http://localhost:3001/api/error/500', () => {
+  http.get(`${API_URL}/api/error/500`, () => {
     return HttpResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
     )
   }),
 
-  http.get('http://localhost:3001/api/error/404', () => {
+  http.get(`${API_URL}/api/error/404`, () => {
     return HttpResponse.json(
       { error: 'Not Found' },
       { status: 404 }
     )
   }),
 
-  http.get('http://localhost:3001/api/error/timeout', () => {
+  http.get(`${API_URL}/api/error/timeout`, () => {
     // Simulate a timeout by delaying the response
     return new Promise((resolve) => {
       setTimeout(() => {

@@ -47,7 +47,7 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
   })
 
   // Get callback URL and error from search params
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const callbackUrl = searchParams.get("callbackUrl") || "/analytics"
   const urlError = searchParams.get("error")
 
   // Initialize React Hook Form with Zod validation
@@ -127,7 +127,7 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
         })
       } else {
         // For credentials/legacy mode, use email/password
-        result = await signIn('spearfish', {
+        result = await signIn('spearfish-mock', {
           email: sanitizedData.email,
           password: sanitizedData.password,
           redirect: false,

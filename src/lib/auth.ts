@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
+import Credentials from "next-auth/providers/credentials"
 import { env } from "@/lib/env"
-import { getAuthMode } from "@/lib/auth-mode"
 import { refreshAccessToken } from "@/lib/auth-utils"
 import type { SpearfishUser } from "@/types/auth"
 
@@ -28,6 +28,64 @@ export const authConfig = {
     },
   },
   providers: [
+    /**
+     * Spearfish Mock Credentials Provider (for MSW mock authentication)
+     * Only enabled in mock mode for development/testing
+     */
+    Credentials({
+      id: "spearfish-mock",
+      name: "Spearfish Mock",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        // Only allow in mock mode
+        if (process.env.NEXT_PUBLIC_AUTH_MODE?.toLowerCase() !== 'mock') {
+          return null
+        }
+
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        try {
+          // Call the mock API endpoint (will be intercepted by MSW)
+          const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          })
+
+          const data = await response.json()
+
+          if (!response.ok || !data.success) {
+            return null
+          }
+
+          // Return user object that matches SpearfishUser type
+          return {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.fullName,
+            firstName: data.user.firstName,
+            lastName: data.user.lastName,
+            userName: data.user.userName,
+            primaryTenantId: data.user.primaryTenantId,
+            tenantMemberships: data.user.tenantMemberships,
+            roles: data.user.roles,
+            authType: data.user.authType,
+          }
+        } catch (error) {
+          console.error("Authentication error:", error)
+          return null
+        }
+      },
+    }),
+
     /**
      * Spearfish OIDC Provider (OpenID Connect)
      * Uses the proper OIDC endpoints from the Identity API with OpenIddict
@@ -131,6 +189,17 @@ export const authConfig = {
         }
       }
 
+      // Handle credentials provider (mock auth)
+      if (user && account?.provider === "spearfish-mock") {
+        token.id = user.id
+        token.email = user.email
+        token.name = user.name
+        token.tenantId = user.primaryTenantId || 0
+        token.tenantMemberships = user.tenantMemberships || []
+        token.roles = user.roles || []
+        token.authType = 'credentials'
+      }
+
       // Handle Google OAuth (simplified)
       if (account?.provider === "google" && user) {
         token.tenantId = 0
@@ -161,8 +230,16 @@ export const authConfig = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
+        session.user.email = token.email as string || session.user.email
+        session.user.name = token.name as string || session.user.name
         session.user.primaryTenantId = token.tenantId as number || 0
         session.user.authType = token.authType as string || 'unknown'
+        
+        // Include additional data for credentials auth
+        if (token.authType === 'credentials') {
+          session.user.tenantMemberships = token.tenantMemberships as number[] || []
+          session.user.roles = token.roles as string[] || []
+        }
         
         // Set simplified session data
         session.tenantId = token.tenantId as number || 0

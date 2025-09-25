@@ -6,9 +6,9 @@ import { isUsingMockAuth, logAuthConfig } from '@/lib/auth-mode'
 /**
  * MSW Provider Component
  * 
- * Conditionally initializes Mock Service Worker based on NEXT_PUBLIC_USE_MOCK_AUTH.
- * - If NEXT_PUBLIC_USE_MOCK_AUTH=true: Uses MSW mocks for authentication
- * - If NEXT_PUBLIC_USE_MOCK_AUTH=false or undefined: Uses real platform-api
+ * Conditionally initializes Mock Service Worker based on NEXT_PUBLIC_AUTH_MODE.
+ * - If NEXT_PUBLIC_AUTH_MODE=mock: Uses MSW mocks for authentication
+ * - If NEXT_PUBLIC_AUTH_MODE=oauth or legacy: Uses real authentication APIs
  */
 export function MSWProvider({ children }: { children: React.ReactNode }) {
   const [mswReady, setMswReady] = useState(false)

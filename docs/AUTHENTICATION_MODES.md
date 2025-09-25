@@ -185,10 +185,9 @@ npm run dev           # Restart with new mode
 
 1. **Single Environment Variable**: `NEXT_PUBLIC_AUTH_MODE` determines authentication mode
 2. **Mode Detection**: Simple string check for 'mock', 'oauth', or 'legacy' (defaults to 'oauth')
-3. **Backward Compatibility**: Still supports legacy `NEXT_PUBLIC_USE_MOCK_AUTH` and `NEXT_PUBLIC_USE_LEGACY_AUTH` variables
-4. **MSW Initialization**: Only starts if mock mode is enabled
-5. **Request Routing**: API route switches between mock, OAuth, and legacy handlers based on mode
-6. **Cookie Forwarding**: Legacy mode forwards cookies for session management
+3. **MSW Initialization**: Only starts if mock mode is enabled
+4. **Request Routing**: API route switches between mock, OAuth, and legacy handlers based on mode
+5. **Cookie Forwarding**: Legacy mode forwards cookies for session management
 
 ### Browser Console Output
 
@@ -210,8 +209,8 @@ npm run dev           # Restart with new mode
    Mode: oauth
    API URL: http://localhost:5000/
    🔗 Using OAuth 2.0 platform-api
-   💡 Set NEXT_PUBLIC_USE_MOCK_AUTH=true to use mocks
-   💡 Set NEXT_PUBLIC_USE_LEGACY_AUTH=true to use legacy auth
+   💡 Set NEXT_PUBLIC_AUTH_MODE=mock to use mocks
+   💡 Set NEXT_PUBLIC_AUTH_MODE=legacy to use legacy auth
 ```
 
 **Legacy Mode:**
@@ -220,7 +219,7 @@ npm run dev           # Restart with new mode
    Mode: legacy
    API URL: http://localhost:5000/
    🍪 Using legacy cookie-based authentication
-   💡 Set NEXT_PUBLIC_USE_MOCK_AUTH=true to use mocks
+   💡 Set NEXT_PUBLIC_AUTH_MODE=mock to use mocks
 ```
 
 ### File Structure
