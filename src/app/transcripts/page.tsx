@@ -1,7 +1,6 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { useGetFeedbackList } from "@/hooks/requests/useFeedback";
 import { useGetQAEvaluation } from "@/hooks/requests/useQAEvaluation";
 import { useGetTranscriptsList } from "@/hooks/requests/useTranscripts";
 import { formatDate } from "@/lib/utils";
