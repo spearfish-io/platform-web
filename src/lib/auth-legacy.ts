@@ -119,7 +119,8 @@ class LegacyAuthService {
    */
   async logout(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/auth/logout`, {
+      // Use platform-web API route proxy instead of direct backend API call
+      const response = await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       })

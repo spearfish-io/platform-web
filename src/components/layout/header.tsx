@@ -5,6 +5,7 @@ import { Button, Flex, Text, Box } from "@radix-ui/themes";
 import { MoonIcon, SunIcon, HamburgerMenuIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { UserInfo } from "@/components/auth/user-info";
+import { TenantSwitcher } from "@/components/tenant-switcher";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -53,6 +54,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
           </Flex>
 
           <Flex align="center" gap="2">
+            <TenantSwitcher />
             <Button
               variant="ghost"
               size="2"
