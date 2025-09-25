@@ -31,11 +31,8 @@ interface LegacyAuthResponse {
 }
 
 class LegacyAuthService {
-  private baseUrl: string
-
   constructor() {
-    // Use the API_URL from environment, fallback to relative paths for same-origin
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || ""
+    // All API calls now go through platform-web proxy routes
   }
 
   /**
@@ -43,7 +40,8 @@ class LegacyAuthService {
    */
   async login(credentials: LegacyLoginCredentials): Promise<LegacyAuthResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/auth/login`, {
+      // Use platform-web API route proxy instead of direct backend API call
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -98,7 +96,8 @@ class LegacyAuthService {
    */
   async getCurrentUser(): Promise<LegacyUser | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/auth/session`, {
+      // Use platform-web API route proxy instead of direct backend API call
+      const response = await fetch("/api/auth/session", {
         credentials: "include",
       })
 
@@ -142,7 +141,8 @@ class LegacyAuthService {
    */
   async switchTenant(tenantId: number): Promise<LegacyUser | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/auth/session/tenant/${tenantId}`, {
+      // Use platform-web API route proxy instead of direct backend API call
+      const response = await fetch(`/api/auth/session/tenant/${tenantId}`, {
         method: "PUT",
         credentials: "include",
       })
@@ -165,8 +165,10 @@ class LegacyAuthService {
    */
   async sendPasswordResetEmail(email: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/auth/password/resetemail`, {
+      // Use platform-web API route proxy instead of direct backend API call
+      const response = await fetch("/api/auth/password/resetemail", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
