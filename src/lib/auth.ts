@@ -120,6 +120,9 @@ export const authConfig = {
       if (user && account?.provider === "spearfish-oidc") {
         token.id = user.id
         token.tenantId = user.primaryTenantId || 0
+        token.tenantName = (user as any).tenantName // Would come from OIDC profile
+        token.roles = user.roles || []
+        token.tenantMemberships = user.tenantMemberships || []
         token.authType = 'oidc'
         
         // Store access token info but not the token itself to reduce size
@@ -164,9 +167,12 @@ export const authConfig = {
         session.user.primaryTenantId = token.tenantId as number || 0
         session.user.authType = token.authType as string || 'unknown'
         
-        // Set simplified session data
+        // Set session data including tenant context
         session.tenantId = token.tenantId as number || 0
+        session.tenantName = token.tenantName as string
         session.authType = token.authType as string || 'unknown'
+        session.roles = token.roles as string[] || []
+        session.tenantMemberships = token.tenantMemberships as number[] || []
       }
 
       return session

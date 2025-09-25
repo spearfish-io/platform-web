@@ -31,12 +31,18 @@ export function MSWProvider({ children }: { children: React.ReactNode }) {
             serviceWorker: {
               url: '/mockServiceWorker.js',
             },
+            quiet: true, // Reduce console noise
           })
           
           console.log('✅ MSW initialized - authentication requests will be mocked')
         } catch (error) {
           console.warn('❌ Failed to initialize MSW:', error)
+          // Continue without MSW if it fails to load
         }
+      } else if (shouldUseMocks) {
+        console.log('🔧 MSW skipped in production mode')
+      } else {
+        console.log('🔧 Using real API endpoints (MSW disabled)')
       }
       
       setMswReady(true)

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Theme } from "@radix-ui/themes";
 import { AuthSessionProvider } from "@/components/auth/session-provider";
+import { TenantProvider } from "@/contexts/tenant-context";
 import { auth } from "@/lib/auth";
 import { MSWProvider } from "@/components/msw-provider";
 import "./globals.css";
@@ -37,15 +38,17 @@ export default async function RootLayout({
       >
         <MSWProvider>
           <AuthSessionProvider session={session}>
-            <Theme
-              accentColor="blue"
-              grayColor="slate"
-              radius="medium"
-              scaling="100%"
-              appearance="inherit"
-            >
-              <ClientProviders>{children}</ClientProviders>
-            </Theme>
+            <TenantProvider>
+              <Theme
+                accentColor="blue"
+                grayColor="slate"
+                radius="medium"
+                scaling="100%"
+                appearance="inherit"
+              >
+                <ClientProviders>{children}</ClientProviders>
+              </Theme>
+            </TenantProvider>
           </AuthSessionProvider>
         </MSWProvider>
       </body>

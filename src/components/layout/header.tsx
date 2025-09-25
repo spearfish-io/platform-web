@@ -5,14 +5,13 @@ import { Button, Flex, Text, Box } from "@radix-ui/themes";
 import { MoonIcon, SunIcon, HamburgerMenuIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { UserInfo } from "@/components/auth/user-info";
-import { useSwitchTenant } from "@/hooks/requests/useTenant";
+import { TenantSwitcher } from "@/components/tenant-switcher";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
 }
 
 export function Header({ onMenuToggle }: HeaderProps) {
-  const { switchTenant, isSwitchTenantLoading } = useSwitchTenant();
   const [isDark, setIsDark] = React.useState(false);
 
   const toggleTheme = () => {
@@ -20,14 +19,6 @@ export function Header({ onMenuToggle }: HeaderProps) {
     // In a real app, this would update the theme context
     document.documentElement.classList.toggle("dark");
   };
-
-  async function handleSwitchTenant() {
-    try {
-      await switchTenant("100000");
-    } catch {
-      console.error("could not switch tenant");
-    }
-  }
 
   return (
     <Box
@@ -66,17 +57,10 @@ export function Header({ onMenuToggle }: HeaderProps) {
                 </Text>
               </Link>
             </Box>
-            <Box asChild>
-              <Button
-                onClick={handleSwitchTenant}
-                loading={isSwitchTenantLoading}
-              >
-                Switch Tenants
-              </Button>
-            </Box>
           </Flex>
 
           <Flex align="center" gap="2">
+            <TenantSwitcher />
             <Button
               variant="ghost"
               size="2"
