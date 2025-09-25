@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-// Transcript List API Route
+// QA Evaluations API Route
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,16 +11,18 @@ export async function GET(request: NextRequest) {
     const authHeader = headersList.get("authorization") || "";
     const cookiesString = cookiesList.toString();
 
-    const transcriptUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/transcripts?${searchParams}`;
-    const response = await fetch(transcriptUrl, {
-      method: "get",
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: cookiesString,
-        Authorization: authHeader,
-      },
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/qa/evaluations?${searchParams}`,
+      {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookiesString,
+          Authorization: authHeader,
+        },
+        cache: "no-store",
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -34,15 +36,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const transcriptListResponse = await response.json();
-    return NextResponse.json(transcriptListResponse);
+    const responseJson = await response.json();
+    return NextResponse.json(responseJson);
   } catch (error) {
-    console.error("Transcript List API error:", error);
+    console.error("QA Evaluation List API error:", error);
 
     return NextResponse.json(
       {
         error: "Search failed",
-        searchType: "transcript",
+        searchType: "qa evaluation",
         query: "",
         results: [],
         totalCount: 0,

@@ -5,12 +5,14 @@ import { Button, Flex, Text, Box } from "@radix-ui/themes";
 import { MoonIcon, SunIcon, HamburgerMenuIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { UserInfo } from "@/components/auth/user-info";
+import { useSwitchTenant } from "@/hooks/requests/useTenant";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
 }
 
 export function Header({ onMenuToggle }: HeaderProps) {
+  const { switchTenant, isSwitchTenantLoading } = useSwitchTenant();
   const [isDark, setIsDark] = React.useState(false);
 
   const toggleTheme = () => {
@@ -19,19 +21,33 @@ export function Header({ onMenuToggle }: HeaderProps) {
     document.documentElement.classList.toggle("dark");
   };
 
+  async function handleSwitchTenant() {
+    try {
+      await switchTenant("100000");
+    } catch {
+      console.error("could not switch tenant");
+    }
+  }
+
   return (
-    <Box 
+    <Box
       asChild
-      style={{ 
+      style={{
         borderBottom: "1px solid var(--gray-6)",
         background: "var(--color-background)",
         position: "sticky",
         top: 0,
-        zIndex: 50
+        zIndex: 50,
       }}
     >
       <header data-testid="header">
-        <Flex align="center" justify="between" p="4" style={{ height: "64px" }} data-testid="nav-menu">
+        <Flex
+          align="center"
+          justify="between"
+          p="4"
+          style={{ height: "64px" }}
+          data-testid="nav-menu"
+        >
           <Flex align="center" gap="3">
             <Button
               variant="ghost"
@@ -50,6 +66,14 @@ export function Header({ onMenuToggle }: HeaderProps) {
                 </Text>
               </Link>
             </Box>
+            <Box asChild>
+              <Button
+                onClick={handleSwitchTenant}
+                loading={isSwitchTenantLoading}
+              >
+                Switch Tenants
+              </Button>
+            </Box>
           </Flex>
 
           <Flex align="center" gap="2">
@@ -57,7 +81,9 @@ export function Header({ onMenuToggle }: HeaderProps) {
               variant="ghost"
               size="2"
               onClick={toggleTheme}
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={
+                isDark ? "Switch to light mode" : "Switch to dark mode"
+              }
             >
               {isDark ? (
                 <SunIcon aria-hidden="true" />

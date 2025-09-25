@@ -1,6 +1,8 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { useGetFeedbackList } from "@/hooks/requests/useFeedback";
+import { useGetQAEvaluation } from "@/hooks/requests/useQAEvaluation";
 import { useGetTranscriptsList } from "@/hooks/requests/useTranscripts";
 import { formatDate } from "@/lib/utils";
 import { TranscriptFileStatus } from "@/types/transcripts";
@@ -17,8 +19,11 @@ import { RefreshCwIcon } from "lucide-react";
 
 export default function TranscriptListPage() {
   const { transcriptsList, isTranscriptsListPending } = useGetTranscriptsList();
+  const { qaEvaluations, isQAEvaluationsPending } = useGetQAEvaluation();
 
-  if (isTranscriptsListPending) {
+  console.log(qaEvaluations);
+
+  if (isTranscriptsListPending || isQAEvaluationsPending) {
     return (
       <AppShell>
         <Box

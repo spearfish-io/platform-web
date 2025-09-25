@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-// Transcript List API Route
+// Feedback List API Route
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
     const authHeader = headersList.get("authorization") || "";
     const cookiesString = cookiesList.toString();
 
-    const transcriptUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/transcripts?${searchParams}`;
-    const response = await fetch(transcriptUrl, {
+    const feedbackUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/feedback?${searchParams}`;
+    const response = await fetch(feedbackUrl, {
       method: "get",
       headers: {
         "Content-Type": "application/json",
@@ -34,15 +34,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const transcriptListResponse = await response.json();
-    return NextResponse.json(transcriptListResponse);
-  } catch (error) {
-    console.error("Transcript List API error:", error);
+    const feedbackListResponse = await response.json();
+
+    return NextResponse.json(feedbackListResponse);
+  } catch (error: any) {
+    console.error("Feedback API error:", error);
 
     return NextResponse.json(
       {
         error: "Search failed",
-        searchType: "transcript",
+        searchType: "feedback",
         query: "",
         results: [],
         totalCount: 0,
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
         hasNextPage: false,
         hasPreviousPage: false,
       },
-      { status: 500 }
+      { status: error?.status || 500 }
     );
   }
 }
